@@ -17,7 +17,7 @@ namespace AzurePipelines.TestLogger.Tests
         {
             // Given
             TestApiClient apiClient = new TestApiClient(_ => "{ \"id\": 1234 }");
-            LoggerQueue loggerQueue = new LoggerQueue(apiClient, "987", "foo", "bar");
+            LoggerQueue loggerQueue = new LoggerQueue(apiClient, 987, "foo", "bar");
 
             // When
             int id = loggerQueue.CreateTestRun(CancellationToken.None).Result;
@@ -44,7 +44,7 @@ namespace AzurePipelines.TestLogger.Tests
         {
             // Given
             TestApiClient apiClient = new TestApiClient(_ => "{ \"id\": 1234 }");
-            LoggerQueue loggerQueue = new LoggerQueue(apiClient, "987", "foo", "bar")
+            LoggerQueue loggerQueue = new LoggerQueue(apiClient, 987, "foo", "bar")
             {
                 Source = "Fizz.Buzz"
             };
@@ -119,7 +119,7 @@ namespace AzurePipelines.TestLogger.Tests
         {
             // Given
             TestApiClient apiClient = new TestApiClient();
-            LoggerQueue loggerQueue = new LoggerQueue(apiClient, "987", "foo", "bar")
+            LoggerQueue loggerQueue = new LoggerQueue(apiClient, 987, "foo", "bar")
             {
                 Source = "Fizz.Buzz"
             };
@@ -173,7 +173,7 @@ namespace AzurePipelines.TestLogger.Tests
                         }
                     ]
                 }");
-            LoggerQueue loggerQueue = new LoggerQueue(apiClient, "987", "foo", "bar")
+            LoggerQueue loggerQueue = new LoggerQueue(apiClient, 987, "foo", "bar")
             {
                 Source = "Fizz.Buzz",
                 RunId = 1

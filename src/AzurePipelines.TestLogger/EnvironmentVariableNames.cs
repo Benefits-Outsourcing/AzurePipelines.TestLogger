@@ -9,5 +9,6 @@
         public const string BuildRequestedFor = "BUILD_REQUESTEDFOR";
         public const string AgentName = "AGENT_NAME";
         public const string AgentJobName = "AGENT_JOBNAME";
+        public const string ReleaseUri = "RELEASE_RELEASEURI";
     }
 }

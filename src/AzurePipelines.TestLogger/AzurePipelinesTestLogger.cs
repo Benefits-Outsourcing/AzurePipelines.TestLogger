@@ -66,14 +66,16 @@ namespace AzurePipelines.TestLogger
             }
 
             if (!GetRequiredVariable(EnvironmentVariableNames.TeamFoundationCollectionUri, parameters, out string collectionUri)
-                || !GetRequiredVariable(EnvironmentVariableNames.TeamProject, parameters, out string teamProject)
-                || !GetRequiredVariable(EnvironmentVariableNames.BuildId, parameters, out string buildId)
-                || !GetRequiredVariable(EnvironmentVariableNames.BuildRequestedFor, parameters, out string buildRequestedFor)
+                || !GetRequiredVariable(EnvironmentVariableNames.TeamProject, parameters, out string teamProject)                
                 || !GetRequiredVariable(EnvironmentVariableNames.AgentName, parameters, out string agentName)
                 || !GetRequiredVariable(EnvironmentVariableNames.AgentJobName, parameters, out string jobName))
             {
                 return;
             }
+
+            var buildId = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.BuildId);
+            var buildRequestedFor = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.BuildRequestedFor);
+            var releaseUri = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseUri);
 
             if (_apiClient == null)
             {
@@ -118,7 +120,7 @@ namespace AzurePipelines.TestLogger
                 _groupTestResultsByClassName = groupTestResultsByClassName;
             }
 
-            _queue = new LoggerQueue(_apiClient, buildId, agentName, jobName, _groupTestResultsByClassName);
+            _queue = new LoggerQueue(_apiClient, int.Parse(buildId), agentName, jobName, _groupTestResultsByClassName);
 
             // Register for the events
             events.TestRunMessage += TestMessageHandler;

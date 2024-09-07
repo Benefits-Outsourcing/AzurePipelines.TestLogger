@@ -93,20 +93,28 @@ namespace AzurePipelines.TestLogger.Tests
                 typeof(UnitTest1),
                 nameof(UnitTest1.TestMethod));
 
-            // int exitCode = ExecuteUnitTestWithLogger(
-            //        testMethod: fullyQualifiedTestMethodName,
-            //        collectionUri: "https://dev.azure.com/wtw-bda-outsourcing-product/",
-            //        buildId: "192852",
-            //        teamProject: "BenefitConnect",
-            //        buildRequestedFor: "PW UNIT TEST",
-            //        agentName: "No AGENT",
-            //        agentJobName: "Job 1");
-
             ApiClientFactory apiClientFactory = new ApiClientFactory();
             IApiClient apiClient = apiClientFactory.CreateWithDefaultCredentials("https://dev.azure.com/wtw-bda-outsourcing-product/", "BenefitConnect", "5.0");
-            object result = await apiClient.GetRunsByBuildId(192852, CancellationToken.None);
 
-            Assert.IsNotNull(result);
+            var testRuns = (await apiClient.GetRunsByBuildId(192852)).ToList();
+            foreach (var testRun in testRuns) 
+            {
+                await apiClient.RemoveTestRun(testRun.Id, CancellationToken.None); 
+            }
+
+            int exitCode = ExecuteUnitTestWithLogger(
+                   testMethod: fullyQualifiedTestMethodName,
+                   collectionUri: "https://dev.azure.com/wtw-bda-outsourcing-product/",
+                   buildId: "192852",
+                   teamProject: "BenefitConnect",
+                   buildRequestedFor: "PW UNIT TEST",
+                   agentName: "No AGENT",
+                   agentJobName: "Job 1");
+
+            
+            var result = await apiClient.GetRunsByBuildId(192852);
+
+            Assert.AreEqual(1, result.Count);
         }
 
         private async Task<TestResults> StartServerAndExecuteUnitTestWithLoggerAsync(
@@ -171,7 +179,7 @@ namespace AzurePipelines.TestLogger.Tests
         private int ExecuteUnitTestWithLogger(
             bool verbose = true,
             bool useDefaultCredentials = true,
-            string apiVersion = "3.0-preview.2",
+            string apiVersion = "7.1-preview.7",
             bool groupTestResultsByClassName = false,
             string testMethod = "SampleUnitTestProject.UnitTest1.TestMethod1",
             string collectionUri = "collectionUri",
@@ -179,7 +187,8 @@ namespace AzurePipelines.TestLogger.Tests
             string buildId = "buildId",
             string buildRequestedFor = "buildRequestedFor",
             string agentName = "agentName",
-            string agentJobName = "jobName")
+            string agentJobName = "jobName",
+            string releaseUri = null)
         {
             List<string> loggerArguments = new List<string>
             {
@@ -207,6 +216,7 @@ namespace AzurePipelines.TestLogger.Tests
                 { EnvironmentVariableNames.BuildRequestedFor, buildRequestedFor },
                 { EnvironmentVariableNames.AgentName, agentName },
                 { EnvironmentVariableNames.AgentJobName, agentJobName },
+                { EnvironmentVariableNames.ReleaseUri, releaseUri }
             };
 
             ProcessRunner processRunner = new ProcessRunner();

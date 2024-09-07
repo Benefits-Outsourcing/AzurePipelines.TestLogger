@@ -6,7 +6,8 @@ namespace AzurePipelines.TestLogger
     {
         public string Name { get; set; }
 
-        public string BuildId { get; set; }
+        public int BuildId { get; set; }
+        public string ReleaseUri { get; set; }
 
         public DateTime StartedDate { get; set; }
 

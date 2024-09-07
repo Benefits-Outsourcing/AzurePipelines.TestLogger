@@ -14,7 +14,7 @@ namespace AzurePipelines.TestLogger
         private readonly CancellationTokenSource _consumeTaskCancellationSource = new CancellationTokenSource();
 
         private readonly IApiClient _apiClient;
-        private readonly string _buildId;
+        private readonly int _buildId;
         private readonly string _agentName;
         private readonly string _jobName;
         private readonly bool _groupTestResultsByClassName;
@@ -25,7 +25,7 @@ namespace AzurePipelines.TestLogger
         internal int RunId { get; set; }
         internal string Source { get; set; }
 
-        public LoggerQueue(IApiClient apiClient, string buildId, string agentName, string jobName, bool groupTestResultsByClassName = true)
+        public LoggerQueue(IApiClient apiClient, int buildId, string agentName, string jobName, bool groupTestResultsByClassName = true)
         {
             _apiClient = apiClient;
             _buildId = buildId;

@@ -8,25 +8,35 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.Identity;
 using AzurePipelines.TestLogger.Json;
+using Microsoft.TeamFoundation.Build.WebApi;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
+using Microsoft.VisualStudio.Services.Common;
+using Microsoft.VisualStudio.Services.WebApi;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using TestOutcome = Microsoft.VisualStudio.TestPlatform.ObjectModel.TestOutcome;
 
 namespace AzurePipelines.TestLogger
 {
     internal abstract class ApiClient : IApiClient
     {
-        private readonly string _baseUrl;
+        private readonly string _runsUrl;
+        private readonly string _buildsUrl;
         private readonly string _apiVersionString;
+        private readonly string _organizationUrl;
+        private readonly string _teamProject;
+        private VssConnection _connection;
         private HttpClient _client;
 
         protected const string _dateFormatString = "yyyy-MM-ddTHH:mm:ss.FFFZ";
 
-        protected ApiClient(string collectionUri, string teamProject, string apiVersionString)
+        protected ApiClient(string organizationUrl, string teamProject, string apiVersionString)
         {
-            if (collectionUri == null)
+            if (organizationUrl == null)
             {
-                throw new ArgumentNullException(nameof(collectionUri));
+                throw new ArgumentNullException(nameof(organizationUrl));
             }
 
             if (teamProject == null)
@@ -34,7 +44,10 @@ namespace AzurePipelines.TestLogger
                 throw new ArgumentNullException(nameof(teamProject));
             }
 
-            _baseUrl = $"{collectionUri}{teamProject}/_apis/test/runs";
+            _teamProject = teamProject;
+            _organizationUrl = organizationUrl;
+            _runsUrl = $"{organizationUrl}{teamProject}/_apis/test/runs";
+            _buildsUrl = $"{organizationUrl}{teamProject}/_apis/build/builds/";
             _apiVersionString = apiVersionString ?? throw new ArgumentNullException(nameof(apiVersionString));
         }
 
@@ -53,38 +66,57 @@ namespace AzurePipelines.TestLogger
 
         public IApiClient WithDefaultCredentials()
         {
-            // _client = new HttpClient(new HttpClientHandler
-            // {
-            //     UseDefaultCredentials = true
-            // });
-            DefaultAzureCredential credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ExcludeManagedIdentityCredential = false });
-            string[] scopes = new[] { "499b84ac-1321-427f-aa17-267ca6975798/.default" }; // Replace with the appropriate scope for your API
+            DefaultAzureCredential credential = new (new DefaultAzureCredentialOptions { ExcludeManagedIdentityCredential = false });
+            string[] scopes = { "499b84ac-1321-427f-aa17-267ca6975798/.default" };
 
-            AzureAuthenticationHandler handler = new AzureAuthenticationHandler(credential, scopes)
+            var handler = new AzureAuthenticationHandler(credential, scopes)
             {
                 InnerHandler = new HttpClientHandler()
             };
 
             _client = new HttpClient(handler);
+            _connection = new VssConnection(new Uri(_organizationUrl), new VssBasicCredential(string.Empty, credential.GetToken(new TokenRequestContext(scopes)).Token));
             return this;
         }
 
         public async Task<int> AddTestRun(TestRun testRun, CancellationToken cancellationToken)
         {
-            string requestBody = new Dictionary<string, object>
-            {
-                { "name", testRun.Name },
-                { "build", new Dictionary<string, object> { { "id", testRun.BuildId } } },
-                { "startedDate", testRun.StartedDate.ToString(_dateFormatString) },
-                { "isAutomated", true }
-            }.ToJson();
+            // string requestBody = new Dictionary<string, object>
+            // {
+            //     { "name", testRun.Name },
+            //     { "build", new Dictionary<string, object> { { "id", testRun.BuildId } } },
+            //     { "startedDate", testRun.StartedDate.ToString(_dateFormatString) },
+            //     { "isAutomated", true }
+            // }.ToJson();
 
-            string responseString = await SendAsync(HttpMethod.Post, null, requestBody, cancellationToken).ConfigureAwait(false);
-            using (StringReader reader = new StringReader(responseString))
-            {
-                JsonObject response = JsonDeserializer.Deserialize(reader) as JsonObject;
-                return response.ValueAsInt("id");
-            }
+            // string responseString = await SendAsync(HttpMethod.Post, null, requestBody, cancellationToken).ConfigureAwait(false);
+            // using (StringReader reader = new StringReader(responseString))
+            // {
+            //     JsonObject response = JsonDeserializer.Deserialize(reader) as JsonObject;
+            //     return response.ValueAsInt("id");
+            // }
+            var testClient = _connection.GetClient<TestManagementHttpClient>();
+            var createdTestRun = await testClient.CreateTestRunAsync(
+                new RunCreateModel(
+                    name: testRun.Name,
+                    startedDate: testRun.StartedDate.ToString(_dateFormatString),
+                    buildId: testRun.BuildId,
+                    isAutomated: true,
+                    releaseUri: testRun.ReleaseUri),
+                _teamProject,
+                cancellationToken);
+
+            // var newTestRun = new RunCreateModel
+            // {
+            //     Name = testRun.Name,
+            //     Build = new ShallowReference { Id = testRun.BuildId.ToString() },
+            //     StartedDate = testRun.StartedDate,
+            //     IsAutomated = true
+            // };
+
+            // var createdTestRun = await testClient.CreateTestRunAsync(newTestRun, _teamProject, cancellationToken: cancellationToken);
+
+            return createdTestRun.Id;
         }
 
         public async Task UpdateTestResults(int testRunId, Dictionary<string, TestResultParent> testCaseTestResults, IEnumerable<IGrouping<string, ITestResult>> testResultsByParent, CancellationToken cancellationToken)
@@ -104,16 +136,20 @@ namespace AzurePipelines.TestLogger
         {
             string responseString = await SendAsync(HttpMethod.Get, $"/{testRunId}/results", null, cancellationToken).ConfigureAwait(false);
             Console.WriteLine(responseString);
-            using StringReader reader = new(responseString);
+            using StringReader reader = new (responseString);
             return JsonDeserializer.Deserialize(reader);
         }
 
-        public async Task<object> GetRunsByBuildId(int buildId, CancellationToken cancellationToken)
+        public async Task RemoveTestRun(int testRunId, CancellationToken cancellationToken)
         {
-            string responseString = await SendAsync(HttpMethod.Get, $"?buildIds={buildId}", null, cancellationToken).ConfigureAwait(false);
-            Console.WriteLine(responseString);
-            using StringReader reader = new(responseString);
-            return JsonDeserializer.Deserialize(reader);
+            TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
+            await testClient.DeleteTestRunAsync(_teamProject, testRunId, cancellationToken: cancellationToken);
+        }
+
+        public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRunsByBuildId(int buildId)
+        {
+            TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
+            return (await testClient.GetTestRunsAsync(_teamProject, buildUri: $"vstfs:///Build/Build/{buildId}")).Where(x => x.State != "255").ToList();
         }
 
         public async Task UpdateTestResults(int testRunId, VstpTestRunComplete testRunComplete, CancellationToken cancellationToken)
@@ -248,7 +284,7 @@ namespace AzurePipelines.TestLogger
         {
         }
 
-        internal virtual async Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersionString = null)
+        internal virtual async Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersionString = null, string queryString = null, string baseUrl = null)
         {
             if (method == null)
             {
@@ -260,7 +296,16 @@ namespace AzurePipelines.TestLogger
                 apiVersionString = _apiVersionString;
             }
 
-            string requestUri = $"{_baseUrl}{endpoint}?api-version={apiVersionString}";
+            if (queryString != null)
+            {
+                queryString += "&";
+            }
+            else
+            {
+                queryString = string.Empty;
+            }
+
+            string requestUri = $"{baseUrl ?? _runsUrl}{endpoint}?{queryString}api-version={apiVersionString}";
             HttpRequestMessage request = new HttpRequestMessage(method, requestUri);
             if (body != null)
             {

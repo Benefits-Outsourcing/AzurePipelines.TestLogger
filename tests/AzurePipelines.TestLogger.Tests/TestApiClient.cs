@@ -25,7 +25,7 @@ namespace AzurePipelines.TestLogger.Tests
             _responseFunc = responseFunc;
         }
 
-        internal override Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersion)
+        internal override Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersion, string queryString, string baseUri)
         {
             Messages.Add(new ClientMessage(method, endpoint, apiVersion ?? _apiVersion, body));
             return Task.FromResult(_responseFunc == null ? string.Empty : _responseFunc(body));

@@ -28,6 +28,8 @@ namespace AzurePipelines.TestLogger
 
         Task<object> GetTestResults(int testRunId, CancellationToken cancellationToken);
 
-        Task<object> GetRunsByBuildId(int buildId, CancellationToken cancellationToken);
+        Task RemoveTestRun(int testRunId, CancellationToken cancellationToken);
+
+        Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRunsByBuildId(int buildId);
     }
 }

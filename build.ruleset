@@ -50,10 +50,10 @@
     <Rule Id="RCS1005" Action="Hidden" />
     <Rule Id="RCS1006" Action="Hidden" />
     <Rule Id="RCS1007" Action="None" />
-    <Rule Id="RCS1008" Action="Warning" />
-    <Rule Id="RCS1009" Action="Warning" />
+    <Rule Id="RCS1008" Action="None" />
+    <Rule Id="RCS1009" Action="None" />
     <Rule Id="RCS1010" Action="None" />
-    <Rule Id="RCS1012" Action="Warning" />
+    <Rule Id="RCS1012" Action="None" />
     <Rule Id="RCS1013" Action="None" />
     <Rule Id="RCS1014" Action="None" />
     <Rule Id="RCS1015" Action="Info" />
