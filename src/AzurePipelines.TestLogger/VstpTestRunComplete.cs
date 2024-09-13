@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace AzurePipelines.TestLogger
 {
-    internal class VstpTestRunComplete
+    public class VstpTestRunComplete
     {
         public VstpTestRunComplete(bool aborted, ICollection<AttachmentSet> attachmentSets)
         {

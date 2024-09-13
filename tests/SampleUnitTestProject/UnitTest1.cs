@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace SampleUnitTestProject
 {
@@ -16,5 +18,51 @@ namespace SampleUnitTestProject
         public void DataTestMethod(int parameter)
         {
         }
+
+        [TestMethod]
+        public void TestMethodThatFails()
+        {
+            Assert.Fail("This test is expected to fail");
+        }
+
+        [TestMethod]
+        public void TestMethodThatIsDeliberatelyFlakey()
+        {
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("Flakey")))
+            {
+                Assert.Fail("Flakey");
+            }
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            if (TestContext.CurrentTestOutcome != UnitTestOutcome.Passed && File.Exists("flakey.txt"))
+            {
+                TestContext.AddResultFile("flakey.txt");
+            }
+        }
+
+        [AssemblyCleanup]
+        public static void AssemblyCleanup()
+        {
+            if (File.Exists("flakey.txt"))
+            {
+                File.Delete("flakey.txt");
+            }
+        }
+
+
+        private TestContext m_testContext;
+        public TestContext TestContext
+        {
+            get { return m_testContext; }
+
+            set
+            {
+                m_testContext = value;
+            }
+        }
+
     }
 }

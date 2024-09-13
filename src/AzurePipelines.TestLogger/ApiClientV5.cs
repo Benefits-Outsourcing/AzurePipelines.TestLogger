@@ -6,14 +6,14 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace AzurePipelines.TestLogger
 {
-    internal class ApiClientV5 : ApiClient
+    public class ApiClientV5 : ApiClient
     {
         public ApiClientV5(string collectionUri, string teamProject, string apiVersionString)
             : base(collectionUri, teamProject, apiVersionString)
         {
         }
 
-        internal override string GetTestResults(
+        public override string GetTestResults(
             Dictionary<string, TestResultParent> testCaseTestResults,
             IEnumerable<IGrouping<string, ITestResult>> testResultsByParent,
             DateTime completedDate)
@@ -34,7 +34,7 @@ namespace AzurePipelines.TestLogger
             })) + " ]";
         }
 
-        internal override void AddAdditionalTestResultProperties(ITestResult testResult, Dictionary<string, object> properties)
+        public override void AddAdditionalTestResultProperties(ITestResult testResult, Dictionary<string, object> properties)
         {
             properties.Add("displayName", testResult.DisplayName);
         }

@@ -1,6 +1,6 @@
 ﻿namespace AzurePipelines.TestLogger.Json
 {
-    internal struct JsonToken
+    public struct JsonToken
     {
         public JsonTokenType Type;
         public string Value;

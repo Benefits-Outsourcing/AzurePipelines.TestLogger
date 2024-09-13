@@ -1,0 +1,31 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build projects
+      run: dotnet build --configuration Release
+
+    - name: Pack NuGet package
+      run: dotnet nuget pack AzurePipeline.TestLogger.nuspec -OutputDirectory ./nupkg
+
+    - name: Publish NuGet package
+      run: dotnet nuget push --source "TestAutomation" --api-key az https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json

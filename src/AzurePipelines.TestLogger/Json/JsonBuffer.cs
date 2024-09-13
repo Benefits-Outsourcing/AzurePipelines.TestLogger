@@ -5,7 +5,7 @@ using System.Text;
 
 namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonBuffer
+    public class JsonBuffer
     {
         public const string ValueNull = "null";
         public const string ValueTrue = "true";

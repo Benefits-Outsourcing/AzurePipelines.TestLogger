@@ -1,6 +1,6 @@
 ﻿namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonValue
+    public class JsonValue
     {
         public JsonValue(int line, int column)
         {

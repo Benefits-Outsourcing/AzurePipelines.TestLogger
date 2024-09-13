@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonObject : JsonValue
+    public class JsonObject : JsonValue
     {
         private readonly IDictionary<string, JsonValue> _data;
 

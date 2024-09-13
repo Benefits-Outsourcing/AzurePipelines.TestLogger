@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonNumber : JsonValue
+    public class JsonNumber : JsonValue
     {
         private readonly string _raw;
         private readonly double _double;

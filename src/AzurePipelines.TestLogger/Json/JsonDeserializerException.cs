@@ -2,7 +2,7 @@
 
 namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonDeserializerException : Exception
+    public class JsonDeserializerException : Exception
     {
         public JsonDeserializerException(string message, Exception innerException, int line, int column)
             : base(message, innerException)

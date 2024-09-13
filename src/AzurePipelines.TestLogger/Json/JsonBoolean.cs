@@ -2,7 +2,7 @@
 
 namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonBoolean : JsonValue
+    public class JsonBoolean : JsonValue
     {
         public JsonBoolean(JsonToken token)
             : base(token.Line, token.Column)

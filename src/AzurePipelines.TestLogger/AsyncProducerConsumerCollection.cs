@@ -6,7 +6,7 @@ namespace AzurePipelines.TestLogger
     /// <remarks>
     /// Adopted from https://docs.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/consuming-the-task-based-asynchronous-pattern.
     /// </remarks>
-    internal class AsyncProducerConsumerCollection<T>
+    public class AsyncProducerConsumerCollection<T>
     {
         private readonly Queue<T> _collection = new Queue<T>();
         private readonly Queue<TaskCompletionSource<T[]>> _waiting = new Queue<TaskCompletionSource<T[]>>();

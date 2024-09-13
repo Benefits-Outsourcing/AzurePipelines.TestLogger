@@ -5,7 +5,7 @@ using System.IO;
 namespace AzurePipelines.TestLogger.Json
 {
     // From https://github.com/xunit/xunit/blob/master/src/common/Json.cs
-    internal static class JsonDeserializer
+    public static class JsonDeserializer
     {
         public static JsonValue Deserialize(TextReader reader)
         {
@@ -16,7 +16,7 @@ namespace AzurePipelines.TestLogger.Json
 
             JsonBuffer buffer = new JsonBuffer(reader);
 
-            JsonValue result = DeserializeInternal(buffer.Read(), buffer);
+            JsonValue result = Deserializepublic(buffer.Read(), buffer);
 
             // There are still unprocessed char. The parsing is not finished. Error happened.
             JsonToken nextToken = buffer.Read();
@@ -30,7 +30,7 @@ namespace AzurePipelines.TestLogger.Json
             return result;
         }
 
-        private static JsonValue DeserializeInternal(JsonToken next, JsonBuffer buffer)
+        private static JsonValue Deserializepublic(JsonToken next, JsonBuffer buffer)
         {
             if (next.Type == JsonTokenType.EOF)
             {
@@ -85,7 +85,7 @@ namespace AzurePipelines.TestLogger.Json
                     break;
                 }
 
-                list.Add(DeserializeInternal(next, buffer));
+                list.Add(Deserializepublic(next, buffer));
 
                 next = buffer.Read();
                 if (next.Type == JsonTokenType.EOF)
@@ -159,7 +159,7 @@ namespace AzurePipelines.TestLogger.Json
                             next);
                     }
 
-                    dictionary[memberName] = DeserializeInternal(buffer.Read(), buffer);
+                    dictionary[memberName] = Deserializepublic(buffer.Read(), buffer);
 
                     next = buffer.Read();
                     if (next.Type == JsonTokenType.RightCurlyBracket)

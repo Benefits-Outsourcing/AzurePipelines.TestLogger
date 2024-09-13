@@ -1,6 +1,6 @@
 ﻿namespace AzurePipelines.TestLogger
 {
-    internal interface IEnvironmentVariableProvider
+    public interface IEnvironmentVariableProvider
     {
         string GetEnvironmentVariable(string name);
     }

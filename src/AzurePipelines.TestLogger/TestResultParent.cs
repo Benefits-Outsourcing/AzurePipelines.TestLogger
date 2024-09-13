@@ -2,7 +2,7 @@
 
 namespace AzurePipelines.TestLogger
 {
-    internal class TestResultParent
+    public class TestResultParent
     {
         public int Id { get; }
 

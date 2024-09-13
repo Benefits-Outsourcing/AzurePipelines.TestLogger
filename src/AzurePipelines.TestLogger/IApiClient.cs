@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
 
 namespace AzurePipelines.TestLogger
 {
-    internal interface IApiClient
+    public interface IApiClient
     {
         bool Verbose { get; set; }
 
@@ -24,12 +25,16 @@ namespace AzurePipelines.TestLogger
 
         Task<int[]> AddTestCases(int testRunId, string[] testCaseNames, DateTime startedDate, string source, CancellationToken cancellationToken);
 
+        Task AddTestCases(int testRunId, params ITestResult[] results);
+
         Task MarkTestRunCompleted(int testRunId, bool aborted, DateTime completedDate, CancellationToken cancellationToken);
 
-        Task<object> GetTestResults(int testRunId, CancellationToken cancellationToken);
+        Task<List<TestCaseResult>> GetTestResults(int testRunId, CancellationToken cancellationToken);
 
         Task RemoveTestRun(int testRunId, CancellationToken cancellationToken);
 
-        Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRunsByBuildId(int buildId);
+        Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId);
+        Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int? buildId, int? releaseId);
+        Task<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun> GetRun(int runId);
     }
 }

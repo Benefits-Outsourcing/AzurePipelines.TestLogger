@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
@@ -30,10 +30,10 @@ namespace AzurePipelines.TestLogger
 
         public AzurePipelinesTestLogger()
         {
-            // while (!Debugger.IsAttached)
-            // {
-            //     Thread.Sleep(100); // Sleep for a short period to avoid busy-waiting
-            // }
+            //while (!Debugger.IsAttached)
+            //{
+            //    Thread.Sleep(100); // Sleep for a short period to avoid busy-waiting
+            //}
 
             // For debugging purposes
             // System.Diagnostics.Debugger.Launch();
@@ -42,7 +42,7 @@ namespace AzurePipelines.TestLogger
         }
 
         // Used for testing
-        internal AzurePipelinesTestLogger(IEnvironmentVariableProvider environmentVariableProvider, IApiClientFactory apiClientFactory)
+        public AzurePipelinesTestLogger(IEnvironmentVariableProvider environmentVariableProvider, IApiClientFactory apiClientFactory)
         {
             _environmentVariableProvider = environmentVariableProvider;
             _apiClientFactory = apiClientFactory;
@@ -66,16 +66,33 @@ namespace AzurePipelines.TestLogger
             }
 
             if (!GetRequiredVariable(EnvironmentVariableNames.TeamFoundationCollectionUri, parameters, out string collectionUri)
-                || !GetRequiredVariable(EnvironmentVariableNames.TeamProject, parameters, out string teamProject)                
+                || !GetRequiredVariable(EnvironmentVariableNames.TeamProject, parameters, out string teamProject)
                 || !GetRequiredVariable(EnvironmentVariableNames.AgentName, parameters, out string agentName)
                 || !GetRequiredVariable(EnvironmentVariableNames.AgentJobName, parameters, out string jobName))
             {
                 return;
             }
 
-            var buildId = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.BuildId);
+            var buildIdString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.BuildId);
+            int? buildId = int.TryParse(buildIdString, out int parsedBuildId) ? parsedBuildId : null;
             var buildRequestedFor = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.BuildRequestedFor);
             var releaseUri = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseUri);
+            var releaseIdString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseId);
+            int? releaseId = int.TryParse(releaseIdString, out int parsedReleaseId) ? parsedReleaseId : null;
+            var isReRun = parameters.ContainsKey("rerun");
+            var runIdParameter = parameters.ContainsKey("TestRunId") ? parameters["TestRunId"] : null;
+
+            var numberOfAgentsString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.NumberOfAgents);
+            if (!int.TryParse(numberOfAgentsString, out int numberOfAgents))
+            {
+                numberOfAgents = 1; // Default to 1 if the environment variable is not present or not a valid number
+            }
+
+            var agentNumberString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.AgentNumber);
+            if (!int.TryParse(agentNumberString, out int agentNumber))
+            {
+                agentNumber = 1; // Default to 1 if the environment variable is not present or not a valid number
+            }
 
             if (_apiClient == null)
             {
@@ -114,13 +131,22 @@ namespace AzurePipelines.TestLogger
                 _apiClient.BuildRequestedFor = buildRequestedFor;
             }
 
+            var runId = !string.IsNullOrWhiteSpace(runIdParameter) ? int.Parse(runIdParameter) : isReRun ? GetInProgressRunId() : 0;
+
+            if (runId == 0 && agentNumber == 1 && numberOfAgents == 1)
+            {
+                // Single agent or local run, just create a run to log against
+                runId = _apiClient.AddTestRun(new TestRun { Name = jobName, StartedDate = DateTime.UtcNow, BuildId = buildId, IsAutomated = true, ReleaseUri = releaseUri }, cancellationToken: CancellationToken.None).GetAwaiter().GetResult();
+                SaveInProgressRunId(runId);
+            }
+
             if (parameters.TryGetValue(TestLoggerParameters.GroupTestResultsByClassName, out string groupTestResultsByClassNameString)
                 && bool.TryParse(groupTestResultsByClassNameString, out bool groupTestResultsByClassName))
             {
                 _groupTestResultsByClassName = groupTestResultsByClassName;
             }
 
-            _queue = new LoggerQueue(_apiClient, int.Parse(buildId), agentName, jobName, _groupTestResultsByClassName);
+            _queue = new LoggerQueue(_apiClient, runId, agentName, jobName, _groupTestResultsByClassName);
 
             // Register for the events
             events.TestRunMessage += TestMessageHandler;
@@ -130,6 +156,20 @@ namespace AzurePipelines.TestLogger
 
             // when the entire test run is finished
             events.TestRunComplete += TestRunCompleteHandler;
+        }
+
+        private int GetInProgressRunId()
+        {
+            if (File.Exists("testrunid.txt"))
+            {
+                return int.Parse(File.ReadAllText("testrunid.txt"));
+            }
+            return 0;
+        }
+
+        private void SaveInProgressRunId(int runId)
+        {
+            File.WriteAllText("testrunid.txt", runId.ToString());
         }
 
         private bool GetRequiredVariable(string name, IDictionary<string, string> parameters, out string value)

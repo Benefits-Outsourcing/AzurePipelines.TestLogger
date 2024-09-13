@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace AzurePipelines.TestLogger.Tests
 {
-    internal class ProcessRunner
+    public class ProcessRunner
     {
         private StringBuilder _outputAndError;
 

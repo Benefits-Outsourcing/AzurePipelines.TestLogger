@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AzurePipelines.TestLogger.Tests
 {
-    internal class MockAzureDevOpsTestRunLogCollectorServer
+    public class MockAzureDevOpsTestRunLogCollectorServer
     {
         public void ConfigureServices(IServiceCollection services)
         {

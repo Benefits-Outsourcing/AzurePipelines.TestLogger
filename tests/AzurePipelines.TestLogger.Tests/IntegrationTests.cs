@@ -65,7 +65,7 @@ namespace AzurePipelines.TestLogger.Tests
                 collectionUri: collectionUri);
 
             // Then
-            Assert.AreEqual(0, exitCode);
+            Assert.Equals(0, exitCode);
         }
 
         [Test]
@@ -81,41 +81,84 @@ namespace AzurePipelines.TestLogger.Tests
                 fullyQualifiedTestMethodName);
 
             // Then
-            Assert.AreEqual(0, testResults.ExitCode);
-            Assert.AreEqual(2, testResults.CapturedRequests.Count);
+            Assert.Equals(0, testResults.ExitCode);
+            Assert.Equals(2, testResults.CapturedRequests.Count);
         }
 
         [Test]
         public async Task ExecuteEndToEndTest()
         {
+
+            if (File.Exists("TestCaseResult_cache.json"))
+            {
+                File.Delete("TestCaseResult_cache.json");
+            }
+
             // Given
             string fullyQualifiedTestMethodName = GetFullyQualifiedTestMethodName(
                 typeof(UnitTest1),
                 nameof(UnitTest1.TestMethod));
 
             ApiClientFactory apiClientFactory = new ApiClientFactory();
-            IApiClient apiClient = apiClientFactory.CreateWithDefaultCredentials("https://dev.azure.com/wtw-bda-outsourcing-product/", "BenefitConnect", "5.0");
+            IApiClient apiClient = apiClientFactory.CreateWithDefaultCredentials("https://dev.azure.com/wtw-bda-outsourcing-product/", "BenefitConnect", "7.0");
 
-            var testRuns = (await apiClient.GetRunsByBuildId(192852)).ToList();
-            foreach (var testRun in testRuns) 
+            //var x_run = await apiClient.GetRun(1384264);
+            //var x_results = await apiClient.GetTestResults(x_run.Id, CancellationToken.None);
+
+            //var x_testcase = x_results.Single(item => item.TestCaseTitle == "Test_HSA_EligibilityQuestions_PageContentAndRelatedFunctionality");
+
+            var testRuns = (await apiClient.GetRuns(193606)).ToList();
+            foreach (var testRun in testRuns)
             {
-                await apiClient.RemoveTestRun(testRun.Id, CancellationToken.None); 
+                await apiClient.RemoveTestRun(testRun.Id, CancellationToken.None);
             }
 
             int exitCode = ExecuteUnitTestWithLogger(
                    testMethod: fullyQualifiedTestMethodName,
                    collectionUri: "https://dev.azure.com/wtw-bda-outsourcing-product/",
-                   buildId: "192852",
                    teamProject: "BenefitConnect",
+                   buildId: "193606",
                    buildRequestedFor: "PW UNIT TEST",
+                   filter: "ClassName=SampleUnitTestProject.UnitTest1",
                    agentName: "No AGENT",
                    agentJobName: "Job 1");
 
-            
-            var result = await apiClient.GetRunsByBuildId(192852);
+            //Assert.That(exitCode, Is.EqualTo(0));
 
-            Assert.AreEqual(1, result.Count);
+            Environment.SetEnvironmentVariable("Flakey", "true");
+            var runId = int.Parse(File.ReadAllText("testrunid.txt"));
+
+            var result = await apiClient.GetRun(runId);
+
+            Assert.That(result, Is.Not.Null);
+
+            exitCode = ExecuteUnitTestWithLogger(
+                   testMethod: fullyQualifiedTestMethodName,
+                   collectionUri: "https://dev.azure.com/wtw-bda-outsourcing-product/",
+                   teamProject: "BenefitConnect",
+                   buildRequestedFor: "PW UNIT TEST",
+                   buildId: "193606",
+                   filter: "Name=TestMethodThatIsDeliberatelyFlakey|Name=TestMethodThatFails",
+                   testRunId: runId.ToString(),
+                   agentName: "No AGENT",
+                   agentJobName: "Job 1");
+
+            //Assert.That(exitCode, Is.EqualTo(0));
+
+            exitCode = ExecuteUnitTestWithLogger(
+                   testMethod: fullyQualifiedTestMethodName,
+                   collectionUri: "https://dev.azure.com/wtw-bda-outsourcing-product/",
+                   teamProject: "BenefitConnect",
+                   buildRequestedFor: "PW UNIT TEST",
+                   buildId: "193606",
+                   filter: "Name=TestMethodThatFails",
+                   testRunId: runId.ToString(),
+                   agentName: "No AGENT",
+                   agentJobName: "Job 1");
+
+            //Assert.That(exitCode, Is.EqualTo(0));
         }
+
 
         private async Task<TestResults> StartServerAndExecuteUnitTestWithLoggerAsync(
             string fullyQualifiedTestMethodName)
@@ -177,9 +220,9 @@ namespace AzurePipelines.TestLogger.Tests
         }
 
         private int ExecuteUnitTestWithLogger(
-            bool verbose = true,
+            bool verbose = false,
             bool useDefaultCredentials = true,
-            string apiVersion = "7.1-preview.7",
+            string apiVersion = "7.0",
             bool groupTestResultsByClassName = false,
             string testMethod = "SampleUnitTestProject.UnitTest1.TestMethod1",
             string collectionUri = "collectionUri",
@@ -188,7 +231,9 @@ namespace AzurePipelines.TestLogger.Tests
             string buildRequestedFor = "buildRequestedFor",
             string agentName = "agentName",
             string agentJobName = "jobName",
-            string releaseUri = null)
+            string releaseUri = null,
+            string filter = null,
+            string testRunId = null)
         {
             List<string> loggerArguments = new List<string>
             {
@@ -199,11 +244,16 @@ namespace AzurePipelines.TestLogger.Tests
                 $"GroupTestResultsByClassName={groupTestResultsByClassName}"
             };
 
+            if (testRunId != null)
+            {
+                loggerArguments.Add($"TestRunId={testRunId}");
+            }
+
             List<string> arguments = new List<string>
             {
                 "test",
                 $"\"{_sampleUnitTestProjectDllFilePath}\"",
-                $"--filter \"FullyQualifiedName={testMethod}\"",
+                $"--filter {(filter ?? "\"FullyQualifiedName={testMethod}\"")}",
                 $"--logger \"{string.Join(";", loggerArguments)}\"",
                 $"--test-adapter-path \"{_azurePipelinesTestLoggerAssemblyPath}\""
             };

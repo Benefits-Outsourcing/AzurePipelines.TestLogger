@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace AzurePipelines.TestLogger
 {
-    internal interface ITestResult
+    public interface ITestResult
     {
         Guid Id { get; }
         string Source { get; }

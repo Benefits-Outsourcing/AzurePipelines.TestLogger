@@ -2,7 +2,7 @@
 
 namespace AzurePipelines.TestLogger.Tests
 {
-    internal interface IRequestStore
+    public interface IRequestStore
     {
         void Add(HttpRequest item);
     }

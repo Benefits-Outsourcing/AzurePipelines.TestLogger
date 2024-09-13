@@ -2,7 +2,7 @@
 
 namespace AzurePipelines.TestLogger
 {
-    internal class ApiClientFactory : IApiClientFactory
+    public class ApiClientFactory : IApiClientFactory
     {
         public IApiClient CreateWithAccessToken(string accessToken, string collectionUri, string teamProject, string apiVersionString)
         {

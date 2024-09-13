@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace AzurePipelines.TestLogger
 {
-    internal class VstpTestResult : ITestResult
+    public class VstpTestResult : ITestResult
     {
         private readonly TestResult _testResult;
 

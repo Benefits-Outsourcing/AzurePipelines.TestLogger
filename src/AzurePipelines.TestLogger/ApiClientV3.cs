@@ -5,14 +5,14 @@ using AzurePipelines.TestLogger.Json;
 
 namespace AzurePipelines.TestLogger
 {
-    internal class ApiClientV3 : ApiClient
+    public class ApiClientV3 : ApiClient
     {
         public ApiClientV3(string collectionUri, string teamProject, string apiVersionString)
             : base(collectionUri, teamProject, apiVersionString)
         {
         }
 
-        internal override string GetTestResults(
+        public override string GetTestResults(
             Dictionary<string, TestResultParent> testCaseTestResults,
             IEnumerable<IGrouping<string, ITestResult>> testResultsByParent,
             DateTime completedDate)

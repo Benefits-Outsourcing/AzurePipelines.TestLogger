@@ -11,16 +11,16 @@ using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
 using AzurePipelines.TestLogger.Json;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using Newtonsoft.Json;
 using TestOutcome = Microsoft.VisualStudio.TestPlatform.ObjectModel.TestOutcome;
 
 namespace AzurePipelines.TestLogger
 {
-    internal abstract class ApiClient : IApiClient
+    public abstract class ApiClient : IApiClient
     {
         private readonly string _runsUrl;
         private readonly string _buildsUrl;
@@ -31,6 +31,8 @@ namespace AzurePipelines.TestLogger
         private HttpClient _client;
 
         protected const string _dateFormatString = "yyyy-MM-ddTHH:mm:ss.FFFZ";
+
+        private readonly LocalCache<TestCaseResult> TestCaseResultCache = new LocalCache<TestCaseResult>();
 
         protected ApiClient(string organizationUrl, string teamProject, string apiVersionString)
         {
@@ -66,7 +68,7 @@ namespace AzurePipelines.TestLogger
 
         public IApiClient WithDefaultCredentials()
         {
-            DefaultAzureCredential credential = new (new DefaultAzureCredentialOptions { ExcludeManagedIdentityCredential = false });
+            DefaultAzureCredential credential = new(new DefaultAzureCredentialOptions { ExcludeManagedIdentityCredential = false });
             string[] scopes = { "499b84ac-1321-427f-aa17-267ca6975798/.default" };
 
             var handler = new AzureAuthenticationHandler(credential, scopes)
@@ -75,7 +77,9 @@ namespace AzurePipelines.TestLogger
             };
 
             _client = new HttpClient(handler);
-            _connection = new VssConnection(new Uri(_organizationUrl), new VssBasicCredential(string.Empty, credential.GetToken(new TokenRequestContext(scopes)).Token));
+            var token = credential.GetToken(new TokenRequestContext(scopes)).Token;
+            //Console.WriteLine("Token: " + token);
+            _connection = new VssConnection(new Uri(_organizationUrl), new VssBasicCredential(string.Empty, token));
             return this;
         }
 
@@ -100,7 +104,7 @@ namespace AzurePipelines.TestLogger
                 new RunCreateModel(
                     name: testRun.Name,
                     startedDate: testRun.StartedDate.ToString(_dateFormatString),
-                    buildId: testRun.BuildId,
+                    buildId: testRun.BuildId.GetValueOrDefault(),
                     isAutomated: true,
                     releaseUri: testRun.ReleaseUri),
                 _teamProject,
@@ -132,12 +136,14 @@ namespace AzurePipelines.TestLogger
             await UploadTestResultFiles(testRunId, testCaseTestResults, testResultsByParent, cancellationToken);
         }
 
-        public async Task<object> GetTestResults(int testRunId, CancellationToken cancellationToken)
+        public async Task<List<TestCaseResult>> GetTestResults(int testRunId, CancellationToken cancellationToken)
         {
-            string responseString = await SendAsync(HttpMethod.Get, $"/{testRunId}/results", null, cancellationToken).ConfigureAwait(false);
-            Console.WriteLine(responseString);
-            using StringReader reader = new (responseString);
-            return JsonDeserializer.Deserialize(reader);
+            TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
+            return await testClient.GetTestResultsAsync(_teamProject, testRunId, cancellationToken: cancellationToken);
+
+            //string responseString = await SendAsync(HttpMethod.Get, $"/{testRunId}/results", null, cancellationToken).ConfigureAwait(false);
+            //using StringReader reader = new(responseString);
+            //return JsonDeserializer.Deserialize(reader);
         }
 
         public async Task RemoveTestRun(int testRunId, CancellationToken cancellationToken)
@@ -146,15 +152,155 @@ namespace AzurePipelines.TestLogger
             await testClient.DeleteTestRunAsync(_teamProject, testRunId, cancellationToken: cancellationToken);
         }
 
-        public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRunsByBuildId(int buildId)
+        public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId)
         {
             TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
             return (await testClient.GetTestRunsAsync(_teamProject, buildUri: $"vstfs:///Build/Build/{buildId}")).Where(x => x.State != "255").ToList();
         }
 
+        public async Task<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun> GetRun(int runId)
+        {
+            TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
+            return await testClient.GetTestRunByIdAsync(_teamProject, runId);
+        }
+
+        public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int? buildId, int? releaseId)
+        {
+            // build a query string so that buildId and releaseId can be passed as query parameters. Both are optional.
+            string queryString = string.Empty;
+            if (buildId != null)
+            {
+                queryString += $"buildIds={buildId}";
+            }
+            if (releaseId != null)
+            {
+                queryString += string.IsNullOrEmpty(queryString) ? $"releaseIds={releaseId}" : $"&releaseIds={releaseId}";
+            }
+
+
+            string responseString = await SendAsync(HttpMethod.Get, "", null, CancellationToken.None, queryString: queryString).ConfigureAwait(false);
+            return JsonConvert.DeserializeObject<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>>(responseString);
+
+        }
+
         public async Task UpdateTestResults(int testRunId, VstpTestRunComplete testRunComplete, CancellationToken cancellationToken)
         {
             await UploadTestResultFiles(testRunId, null, testRunComplete.Attachments, cancellationToken);
+        }
+
+        public async Task AddTestCases(int testRunId, params ITestResult[] results)
+        {
+            // use VssConnection
+            var testClient = _connection.GetClient<TestManagementHttpClient>();
+
+            var previousTestResults = TestCaseResultCache.Items.Where(cached => results.Any(result => cached.AutomatedTestName.Equals(result.DisplayName))).ToList();
+
+            if (previousTestResults.Any())
+            {
+                var updatedTestCaseResults = await testClient.UpdateTestResultsAsync(
+                    results.Select(result =>
+                    {
+                        var parent = previousTestResults.SingleOrDefault(cached => cached.AutomatedTestName.Equals(result.DisplayName));
+                        var subresults = new List<TestSubResult>();
+                        if (parent.ResultGroupType != ResultGroupType.Rerun)
+                        {
+                            subresults.Add(
+                                // copy the parent result to the subresult so that we keep the first failed test as a subresult
+                                new TestSubResult
+                                {
+                                    ParentId = parent.Id,
+                                    DisplayName = $"#1 {result.DisplayName}",
+                                    Outcome = parent.Outcome,
+                                    DurationInMs = (long)parent.DurationInMs,
+                                    ErrorMessage = parent.ErrorMessage,
+                                    StackTrace = parent.StackTrace,
+                                    ResultGroupType = ResultGroupType.None,
+                                    ComputerName = Environment.MachineName,
+                                    CompletedDate = parent.CompletedDate,
+                                    StartedDate = parent.StartedDate,
+                                    CustomFields = new List<CustomTestField> { new CustomTestField { FieldName = "AttemptId", Value = 1 } }
+
+                                });
+                        }
+                        // add the latest test result
+                        subresults.Add(new TestSubResult
+                        {
+                            ParentId = parent.Id,
+                            DisplayName = $"#{parent.Revision + 1} {result.DisplayName}",
+                            Outcome = result.Outcome.ToString(),
+                            DurationInMs = Convert.ToInt64(result.Duration.TotalMilliseconds),
+                            ErrorMessage = result.ErrorMessage,
+                            StackTrace = result.ErrorStackTrace,
+                            ResultGroupType = ResultGroupType.None,
+                            ComputerName = Environment.MachineName,
+                            CompletedDate = result.StartTime.UtcDateTime,
+                            StartedDate = result.StartTime.UtcDateTime,
+                            CustomFields = new List<CustomTestField> { new CustomTestField { FieldName = "AttemptId", Value = parent.Revision + 1 } }
+                        });
+
+                        var newParent = new TestCaseResult
+                        {
+                            Id = parent.Id,
+                            Outcome = result.Outcome.ToString(),
+                            AutomatedTestName = result.DisplayName,
+                            // FailingSince TODO
+                            ResultGroupType = ResultGroupType.Rerun,
+                            SubResults = subresults,
+                            ErrorMessage = result.ErrorMessage ?? string.Empty,
+                            StackTrace = result.ErrorStackTrace ?? string.Empty,
+                            ComputerName = Environment.MachineName,
+                            StartedDate = result.StartTime.UtcDateTime,
+                            CompletedDate = result.StartTime.UtcDateTime,
+                            CustomFields = new List<CustomTestField> { new CustomTestField { FieldName = "AttemptId", Value = parent.Revision + 1 }, new CustomTestField { FieldName = "IsTestResultFlaky", Value = result.Outcome == TestOutcome.Passed } }
+                        };
+
+                        parent.ResultGroupType = ResultGroupType.Rerun;
+                        parent.Revision++;
+                        TestCaseResultCache.WriteCache();
+
+                        return newParent;
+
+                    }).ToArray(),
+                    project: _teamProject,
+                    runId: testRunId,
+                    cancellationToken: CancellationToken.None
+                );
+            }
+            else
+            {
+                var testCases = results.Select(result => new TestCaseResult
+                {
+                    TestCaseTitle = result.DisplayName,
+                    ComputerName = Environment.MachineName,
+                    AutomatedTestName = result.DisplayName,
+                    AutomatedTestType = "UnitTest",
+                    CompletedDate = result.StartTime.UtcDateTime,
+                    StartedDate = result.StartTime.UtcDateTime,
+                    Outcome = result.Outcome.ToString(),
+                    // FailingSince TODO
+                    DurationInMs = Convert.ToInt64(result.Duration.TotalMilliseconds),
+                    //ErrorMessage = result.ErrorMessage,
+                    //StackTrace = result.ErrorStackTrace,
+                    ResultGroupType = ResultGroupType.None,
+                }).ToArray();
+
+                var savedCases = await testClient.AddTestResultsToTestRunAsync(
+                    testCases,
+                    project: _teamProject,
+                    runId: testRunId,
+                    cancellationToken: CancellationToken.None
+                );
+
+                testCases.ForEach(testCase =>
+                {
+                    testCase.Revision = 1;
+                    testCase.Id = savedCases.Single(saved => saved.AutomatedTestName.Equals(testCase.AutomatedTestName)).Id;
+                });
+
+
+                TestCaseResultCache.AddRange(testCases);
+            }
+
         }
 
         public async Task<int[]> AddTestCases(int testRunId, string[] testCaseNames, DateTime startedDate, string source, CancellationToken cancellationToken)
@@ -275,16 +421,16 @@ namespace AzurePipelines.TestLogger
             return properties;
         }
 
-        internal abstract string GetTestResults(
+        public abstract string GetTestResults(
             Dictionary<string, TestResultParent> testCaseTestResults,
             IEnumerable<IGrouping<string, ITestResult>> testResultsByParent,
             DateTime completedDate);
 
-        internal virtual void AddAdditionalTestResultProperties(ITestResult testResult, Dictionary<string, object> properties)
+        public virtual void AddAdditionalTestResultProperties(ITestResult testResult, Dictionary<string, object> properties)
         {
         }
 
-        internal virtual async Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersionString = null, string queryString = null, string baseUrl = null)
+        public virtual async Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersionString = null, string queryString = null, string baseUrl = null)
         {
             if (method == null)
             {

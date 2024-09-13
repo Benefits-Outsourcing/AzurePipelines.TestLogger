@@ -2,7 +2,7 @@
 
 namespace AzurePipelines.TestLogger.Json
 {
-    internal class JsonArray : JsonValue
+    public class JsonArray : JsonValue
     {
         private readonly JsonValue[] _array;
 

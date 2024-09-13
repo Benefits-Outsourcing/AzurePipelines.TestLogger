@@ -1,6 +1,6 @@
 ﻿namespace AzurePipelines.TestLogger.Json
 {
-    internal enum JsonTokenType
+    public enum JsonTokenType
     {
         LeftCurlyBracket,   // [
         LeftSquareBracket,  // {
