@@ -36,6 +36,15 @@ jobs:
     - name: Show working directory
       run: pwd
 
+    - name: List contents of build output directory (TestLogger)
+      run: ls -R ./src/AzurePipelines.TestLogger/bin/Release/net8.0
+
+    - name: List contents of build output directory (CompleteTestRun)
+      run: ls -R ./src/CompleteTestRun/bin/Release/net8.0
+
+    - name: List contents of build output directory (CreateTestRun)
+      run: ls -R ./src/CreateTestRun/bin/Release/net8.0
+
     - name: Pack NuGet package
       run: nuget pack .nuspec -OutputDirectory ./nupkg
 
