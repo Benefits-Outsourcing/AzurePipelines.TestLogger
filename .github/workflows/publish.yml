@@ -27,8 +27,14 @@ jobs:
     - name: Build projects
       run: dotnet build --configuration Release
 
-    - name: List contents of working directory
-      run: ls -R
+    - name: Install tree
+      run: sudo apt-get install -y tree
+
+    - name: List directory structure
+      run: tree -d
+
+    - name: Show working directory
+      run: pwd
 
     - name: Pack NuGet package
       run: nuget pack .nuspec -OutputDirectory ./nupkg
