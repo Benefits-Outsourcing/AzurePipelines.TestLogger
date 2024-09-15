@@ -27,6 +27,9 @@ jobs:
     - name: Build projects
       run: dotnet build --configuration Release
 
+    - name: List contents of working directory
+      run: ls -R
+
     - name: Pack NuGet package
       run: nuget pack .nuspec -OutputDirectory ./nupkg
 
