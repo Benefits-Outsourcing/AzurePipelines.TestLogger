@@ -51,5 +51,11 @@ jobs:
     - name: Pack NuGet package
       run: nuget pack .nuspec -OutputDirectory ./nupkg
 
+    - name: Upload NuGet package artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: nuget-package
+        path: ./nupkg/*.nupkg
+
     - name: Publish NuGet package
-      run: dotnet nuget push --source "TestAutomation" --api-key az https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json
+      run: dotnet nuget push ./nupkg/*.nupkg --source "https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json" --api-key test
