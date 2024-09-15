@@ -24,8 +24,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build projects
-      run: dotnet build --configuration Release
+    - name: Build for Windows
+      run: dotnet publish -c Release -r win-x64 --self-contained
+
+    - name: Build for Linux
+      run: dotnet publish -c Release -r linux-x64 --self-contained
 
     - name: Install tree
       run: sudo apt-get install -y tree
