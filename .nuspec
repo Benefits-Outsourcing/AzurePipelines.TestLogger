@@ -11,8 +11,8 @@
     <tags>Azure DevOps Test Logger</tags>
   </metadata>
   <files>
-    <file src="src/AzurePipelines.TestLogger/bin/Release/net8.0/AzurePipeline.TestLogger.dll" target="lib/net8.0/AzurePipeline.TestLogger.dll" />
-    <file src="src/CompleteTestRun/bin/Release/net8.0/CompleteTestRun.exe" target="tools/CompleteTestRun.exe" />
-    <file src="src/CreateTestRun/bin/Release/net8.0/CreateTestRun.exe" target="tools/CreateTestRun.exe" />
+    <file src="./src/AzurePipelines.TestLogger/bin/Release/net8.0/AzurePipeline.TestLogger.dll" target="lib/net8.0/AzurePipeline.TestLogger.dll" />
+    <file src="./src/CompleteTestRun/bin/Release/net8.0/CompleteTestRun.exe" target="tools/CompleteTestRun.exe" />
+    <file src="./src/CreateTestRun/bin/Release/net8.0/CreateTestRun.exe" target="tools/CreateTestRun.exe" />
   </files>
 </package>
