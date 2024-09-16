@@ -49,7 +49,7 @@ jobs:
   #   displayName: 'List contents of build output directory (CreateTestRun)'
 
   - script: |
-      VERSION=$(date +%Y%m%d.%H%M%S)
+      VERSION=$(date +%Y.%m.%d)
       echo "##vso[task.setvariable variable=PACKAGE_VERSION]$VERSION"
     displayName: 'Generate package version based on date'
 
