@@ -96,7 +96,7 @@ namespace AzurePipelines.TestLogger
 
             if (_apiClient == null)
             {
-                string apiVersion = "5.0";
+                string apiVersion = "7.2";
 
                 if (parameters.TryGetValue(TestLoggerParameters.ApiVersion, out string apiVersionParameterValue))
                 {
@@ -181,7 +181,7 @@ namespace AzurePipelines.TestLogger
             }
             if (string.IsNullOrEmpty(value))
             {
-                Console.WriteLine($"AzurePipelines.TestLogger: Not an Azure Pipelines test run, environment variable {name} not set.");
+                Console.WriteLine($"AzurePipelines.TestLogger: Not an Azure Pipelines test run, environment variable {name} not set. Parameters(key/value): {string.Join(", ", parameters)}");
                 return false;
             }
             return true;

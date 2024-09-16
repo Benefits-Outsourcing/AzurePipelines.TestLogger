@@ -18,6 +18,7 @@ namespace AzurePipelines.TestLogger
         private readonly string _jobName;
         private readonly bool _groupTestResultsByClassName;
         private readonly bool _isReRun;
+        private readonly bool _isPipeline;
 
         // public for testing
         public Dictionary<string, TestResultParent> Parents { get; } = new Dictionary<string, TestResultParent>();
@@ -25,7 +26,7 @@ namespace AzurePipelines.TestLogger
         public int RunId { get; set; }
         public string Source { get; set; }
 
-        public LoggerQueue(IApiClient apiClient, int runId, string agentName, string jobName, bool groupTestResultsByClassName = true, bool isReRun = false)
+        public LoggerQueue(IApiClient apiClient, int runId, string agentName, string jobName, bool groupTestResultsByClassName = true, bool isReRun = false, bool isPipeline = false)
         {
             _apiClient = apiClient;
             _agentName = agentName;
@@ -33,6 +34,7 @@ namespace AzurePipelines.TestLogger
             _groupTestResultsByClassName = groupTestResultsByClassName;
             RunId = runId;
             _isReRun = isReRun;
+            _isPipeline = isPipeline;
             _consumeTask = ConsumeItemsAsync(_consumeTaskCancellationSource.Token);
         }
 
@@ -162,6 +164,7 @@ namespace AzurePipelines.TestLogger
 
         private async Task SendTestsCompleted(VstpTestRunComplete testRunComplete, CancellationToken cancellationToken)
         {
+
             // Mark all parents as completed (but only if we actually created a parent)
             //if (RunId != 0)
             //{
@@ -169,6 +172,10 @@ namespace AzurePipelines.TestLogger
 
             //    await _apiClient.MarkTestRunCompleted(RunId, testRunComplete.Aborted, DateTime.UtcNow, cancellationToken).ConfigureAwait(false);
             //}
+
+            if(!_isPipeline) {
+                await _apiClient.MarkTestRunCompleted(RunId, testRunComplete.Aborted, DateTime.UtcNow, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 }

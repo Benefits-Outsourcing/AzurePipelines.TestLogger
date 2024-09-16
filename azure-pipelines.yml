@@ -1,22 +1,61 @@
+trigger:
+  branches:
+    include:
+      - develop
+
+pr:
+  branches:
+    include:
+      - develop
+
 jobs:
-- job: Windows
+- job: BuildAndPublish
+  displayName: 'Build and Publish NuGet Package'
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'ubuntu-latest'
+
   steps:
-  - script: build -target BuildServer
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-- job: Linux
-  pool:
-    vmImage: 'ubuntu 16.04'
-  steps:
-  - script: pwsh ./build.ps1 -target BuildServer
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-- job: Mac
-  pool:
-    vmImage: 'macOS-10.13'
-  steps:
-  - script: pwsh ./build.ps1 -target BuildServer
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+    displayName: 'Setup .NET'
+
+  - script: dotnet restore
+    displayName: 'Restore dependencies'
+
+  - script: dotnet publish -c Release -r win-x64 --self-contained
+    displayName: 'Build for Windows'
+
+  - script: dotnet publish -c Release -r linux-x64 --self-contained
+    displayName: 'Build for Linux'
+
+  - script: sudo apt-get install -y tree
+    displayName: 'Install tree'
+
+  - script: tree -d
+    displayName: 'List directory structure'
+
+  - script: pwd
+    displayName: 'Show working directory'
+
+  - script: ls -R ./src/AzurePipelines.TestLogger/bin/Release/net8.0
+    displayName: 'List contents of build output directory (TestLogger)'
+
+  - script: ls -R ./src/CompleteTestRun/bin/Release/net8.0
+    displayName: 'List contents of build output directory (CompleteTestRun)'
+
+  - script: ls -R ./src/CreateTestRun/bin/Release/net8.0
+    displayName: 'List contents of build output directory (CreateTestRun)'
+
+  - script: nuget pack .nuspec -OutputDirectory ./nupkg
+    displayName: 'Pack NuGet package'
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)/nupkg'
+      artifact: 'nuget-package'
+    displayName: 'Upload NuGet package artifact'
+
+  - script: dotnet nuget push ./nupkg/*.nupkg --source "https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json" --api-key $(NUGET_API_KEY)
+    displayName: 'Publish NuGet package'
