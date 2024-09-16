@@ -30,25 +30,30 @@ jobs:
   - script: dotnet publish -c Release -r linux-x64 --self-contained
     displayName: 'Build for Linux'
 
-  - script: sudo apt-get install -y tree
-    displayName: 'Install tree'
+  # - script: sudo apt-get install -y tree
+  #   displayName: 'Install tree'
 
-  - script: tree -d
-    displayName: 'List directory structure'
+  # - script: tree -d
+  #   displayName: 'List directory structure'
 
-  - script: pwd
-    displayName: 'Show working directory'
+  # - script: pwd
+  #   displayName: 'Show working directory'
 
-  - script: ls -R ./src/AzurePipelines.TestLogger/bin/Release/net8.0
-    displayName: 'List contents of build output directory (TestLogger)'
+  # - script: ls -R ./src/AzurePipelines.TestLogger/bin/Release/net8.0
+  #   displayName: 'List contents of build output directory (TestLogger)'
 
-  - script: ls -R ./src/CompleteTestRun/bin/Release/net8.0
-    displayName: 'List contents of build output directory (CompleteTestRun)'
+  # - script: ls -R ./src/CompleteTestRun/bin/Release/net8.0
+  #   displayName: 'List contents of build output directory (CompleteTestRun)'
 
-  - script: ls -R ./src/CreateTestRun/bin/Release/net8.0
-    displayName: 'List contents of build output directory (CreateTestRun)'
+  # - script: ls -R ./src/CreateTestRun/bin/Release/net8.0
+  #   displayName: 'List contents of build output directory (CreateTestRun)'
 
-  - script: nuget pack .nuspec -OutputDirectory ./nupkg
+  - script: |
+      VERSION=$(date +%Y%m%d.%H%M%S)
+      echo "##vso[task.setvariable variable=PACKAGE_VERSION]$VERSION"
+    displayName: 'Generate package version based on date'
+
+  - script: nuget pack .nuspec -OutputDirectory ./nupkg -Version $(PACKAGE_VERSION)
     displayName: 'Pack NuGet package'
 
   # - task: PublishPipelineArtifact@1
