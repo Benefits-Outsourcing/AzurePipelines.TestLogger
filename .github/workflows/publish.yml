@@ -58,4 +58,4 @@ jobs:
         path: ./nupkg/*.nupkg
 
     - name: Publish NuGet package
-      run: dotnet nuget push ./nupkg/*.nupkg --source "https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json" --api-key test
+      run: dotnet nuget push ./nupkg/*.nupkg --source "https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json" --api-key nope
