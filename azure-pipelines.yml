@@ -51,11 +51,14 @@ jobs:
   - script: nuget pack .nuspec -OutputDirectory ./nupkg
     displayName: 'Pack NuGet package'
 
-  - task: PublishPipelineArtifact@1
-    inputs:
-      targetPath: '$(Build.SourcesDirectory)/nupkg'
-      artifact: 'nuget-package'
-    displayName: 'Upload NuGet package artifact'
+  # - task: PublishPipelineArtifact@1
+  #   inputs:
+  #     targetPath: '$(Build.SourcesDirectory)/nupkg'
+  #     artifact: 'nuget-package'
+  #   displayName: 'Upload NuGet package artifact'
 
+  - task: NuGetAuthenticate@1
+    displayName: 'Authenticate with NuGet' 
+  
   - script: dotnet nuget push ./nupkg/*.nupkg --source "https://pkgs.dev.azure.com/wtw-bda-outsourcing-product/BenefitConnect/_packaging/TestAutomation/nuget/v3/index.json" --api-key VSTS
     displayName: 'Publish NuGet package'
