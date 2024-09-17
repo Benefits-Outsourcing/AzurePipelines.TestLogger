@@ -14,8 +14,8 @@
 		  <dependency id="Semver" version="2.3.0" />
 		  <dependency id="Microsoft.TeamFoundationServer.Client" version="19.225.1" />
 		  <dependency id="Microsoft.TestPlatform.ObjectModel" version="17.11.1" />
-		  <dependency id="Microsoft.VisualStudio.Services.Client" version="19.1225.1" />
-		  <dependency id="Microsoft.VisualStudio.Services.Release.Client" version="19.1225.1" />
+		  <dependency id="Microsoft.VisualStudio.Services.Client" version="19.225.1" />
+		  <dependency id="Microsoft.VisualStudio.Services.Release.Client" version="19.225.1" />
 		  <dependency id="Newtonsoft.Json" version="13.0.3" />
 	  </dependencies>
   </metadata>
