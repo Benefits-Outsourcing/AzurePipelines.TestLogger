@@ -9,6 +9,15 @@
     <description>Dotnet test logger for reporting results to an azure devops release, build or stand alone test run.</description>
     <releaseNotes>Initial release.</releaseNotes>
     <tags>Azure DevOps Test Logger</tags>
+	  <dependencies>
+		  <dependency id="Azure.Identity" version="1.12.0" />
+		  <dependency id="Semver" version="2.3.0" />
+		  <dependency id="Microsoft.TeamFoundationServer.Client" version="19.225.1" />
+		  <dependency id="Microsoft.TestPlatform.ObjectModel" version="17.11.1" />
+		  <dependency id="Microsoft.VisualStudio.Services.Client" version="19.1225.1" />
+		  <dependency id="Microsoft.VisualStudio.Services.Release.Client" version="19.1225.1" />
+		  <dependency id="Newtonsoft.Json" version="13.0.3" />
+	  </dependencies>
   </metadata>
   <files>
     <file src="./src/AzurePipelines.TestLogger/bin/Release/net8.0/AzurePipelines.TestLogger.dll" target="lib/net8.0/AzurePipelines.TestLogger.dll" />
@@ -18,13 +27,4 @@
     <file src="./src/CompleteTestRun/bin/Release/net8.0/win-x64/publish/*" target="tools/win-x64/" />
     <file src="./src/CompleteTestRun/bin/Release/net8.0/linux-x64/publish/*" target="tools/linux-x64/" />
   </files>
-	<ItemGroup>
-		<PackageReference Include="Azure.Identity" Version="1.12.0" />
-		<PackageReference Include="Semver" Version="2.3.0" />
-		<PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
-		<PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.11.1" />
-		<PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="19.1225.1" />
-		<PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="19.1225.1" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	</ItemGroup>
 </package>
