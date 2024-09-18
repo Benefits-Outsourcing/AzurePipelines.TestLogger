@@ -108,7 +108,7 @@ namespace AzurePipelines.TestLogger
                     isAutomated: true,
                     releaseUri: testRun.ReleaseUri),
                 _teamProject,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
 
             // var newTestRun = new RunCreateModel
             // {
@@ -149,19 +149,19 @@ namespace AzurePipelines.TestLogger
         public async Task RemoveTestRun(int testRunId, CancellationToken cancellationToken)
         {
             TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
-            await testClient.DeleteTestRunAsync(_teamProject, testRunId, cancellationToken: cancellationToken);
+            await testClient.DeleteTestRunAsync(_teamProject, testRunId, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId)
         {
             TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
-            return (await testClient.GetTestRunsAsync(_teamProject, buildUri: $"vstfs:///Build/Build/{buildId}")).Where(x => x.State != "255").ToList();
+            return (await testClient.GetTestRunsAsync(_teamProject, buildUri: $"vstfs:///Build/Build/{buildId}").ConfigureAwait(false)).Where(x => x.State != "255").ToList();
         }
 
         public async Task<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun> GetRun(int runId)
         {
             TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
-            return await testClient.GetTestRunByIdAsync(_teamProject, runId);
+            return await testClient.GetTestRunByIdAsync(_teamProject, runId).ConfigureAwait(false);
         }
 
         public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int? buildId, int? releaseId)
@@ -348,13 +348,13 @@ namespace AzurePipelines.TestLogger
 
         public async Task MarkTestRunCompleted(int testRunId, bool aborted, DateTime completedDate, CancellationToken cancellationToken)
         {
-            // Mark the overall test run as completed
-            string requestBody = $@"{{
-                ""state"": ""{(aborted ? "Aborted" : "Completed")}"",
-                ""completedDate"": ""{completedDate.ToString(_dateFormatString)}""
-            }}";
+            var testClient = _connection.GetClient<TestManagementHttpClient>();
 
-            await SendAsync(new HttpMethod("PATCH"), $"/{testRunId}", requestBody, cancellationToken).ConfigureAwait(false);
+            await testClient.UpdateTestRunAsync(
+                    new RunUpdateModel(state: aborted ? "Aborted" : "Completed", completedDate: completedDate.ToString(_dateFormatString)),
+                    project: _teamProject,
+                    runId: testRunId,
+                    cancellationToken: CancellationToken.None).ConfigureAwait(false);
         }
 
         protected Dictionary<string, object> GetTestResultProperties(ITestResult testResult)
