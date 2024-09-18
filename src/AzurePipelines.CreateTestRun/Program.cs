@@ -29,7 +29,7 @@ if (agentNumber == 1)
 {
     runId = await apiClient.AddTestRun(new TestRun()
     {
-        Name = Environment.GetEnvironmentVariable(EnvironmentVariableNames.AgentJobName),
+        Name = $"{Environment.GetEnvironmentVariable("RELEASE_DEFINITIONNAME")}: {Environment.GetEnvironmentVariable("RELEASE_RELEASENAME")}",
         BuildId = buildId,
         IsAutomated = true,
         ReleaseUri = releaseUri,
