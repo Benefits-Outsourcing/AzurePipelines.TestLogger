@@ -3,7 +3,7 @@
 ApiClientFactory apiClientFactory = new ApiClientFactory();
 var baseUri = Environment.GetEnvironmentVariable(EnvironmentVariableNames.TeamFoundationCollectionUri);
 var project = Environment.GetEnvironmentVariable(EnvironmentVariableNames.TeamProject);
-var runId = Environment.GetEnvironmentVariable("TestRunId");
+var runId = Environment.GetEnvironmentVariable(EnvironmentVariableNames.TestRunId);
 
 IApiClient apiClient = apiClientFactory.CreateWithDefaultCredentials(baseUri, project, "7.0");
 

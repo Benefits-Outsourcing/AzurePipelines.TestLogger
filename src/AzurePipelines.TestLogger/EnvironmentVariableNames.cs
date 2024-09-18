@@ -5,6 +5,7 @@
         public const string AccessToken = "SYSTEM_ACCESSTOKEN";
         public const string TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
         public const string TeamProject = "SYSTEM_TEAMPROJECT";
+        public const string TestRunId = "BDAOUT_TESTRUNID";
         public const string BuildId = "BUILD_BUILDID";
         public const string BuildRequestedFor = "BUILD_REQUESTEDFOR";
         public const string AgentName = "AGENT_NAME";

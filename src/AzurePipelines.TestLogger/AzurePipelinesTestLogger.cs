@@ -80,7 +80,7 @@ namespace AzurePipelines.TestLogger
             var releaseIdString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseId);
             int? releaseId = int.TryParse(releaseIdString, out int parsedReleaseId) ? parsedReleaseId : null;
             var isReRun = parameters.ContainsKey("rerun");
-            var runIdParameter = parameters.ContainsKey("TestRunId") ? parameters["TestRunId"] : null;
+            var runIdParameter = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.TestRunId);
             var isPipeline = parameters.ContainsKey("pipeline");
 
             var numberOfAgentsString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.NumberOfAgents);
