@@ -21,6 +21,7 @@ if (!int.TryParse(agentNumberString, out int agentNumber))
 
 var buildId = int.Parse(Environment.GetEnvironmentVariable(EnvironmentVariableNames.BuildId)!);
 var releaseUri = Environment.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseUri);
+var releaseEnvironmentUri = Environment.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseEnvironmentUri);
 var releaseId = int.Parse(Environment.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseId)!);
 int runId = 0;
 
@@ -32,6 +33,7 @@ if (agentNumber == 1)
         BuildId = buildId,
         IsAutomated = true,
         ReleaseUri = releaseUri,
+        ReleaseEnvironmentUri = releaseEnvironmentUri,
         StartedDate = DateTime.UtcNow,
     }, CancellationToken.None);
 }

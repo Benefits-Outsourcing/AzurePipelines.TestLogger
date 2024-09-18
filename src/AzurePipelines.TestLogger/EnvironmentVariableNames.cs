@@ -10,6 +10,7 @@
         public const string AgentName = "AGENT_NAME";
         public const string AgentJobName = "AGENT_JOBNAME";
         public const string ReleaseUri = "RELEASE_RELEASEURI";
+        public const string ReleaseEnvironmentUri = "RELEASE_ENVIRONMENTURI";
         public const string ReleaseId = "RELEASE_RELEASEID";
         public const string AgentNumber = "SYSTEM_JOBPOSITIONINPHASE";
         public const string NumberOfAgents = "SYSTEM_TOTALJOBSINPHASE";

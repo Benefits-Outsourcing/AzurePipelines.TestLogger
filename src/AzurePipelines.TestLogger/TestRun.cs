@@ -8,6 +8,7 @@ namespace AzurePipelines.TestLogger
 
         public int? BuildId { get; set; }
         public string ReleaseUri { get; set; }
+        public string ReleaseEnvironmentUri { get; set; }
 
         public DateTime StartedDate { get; set; }
 

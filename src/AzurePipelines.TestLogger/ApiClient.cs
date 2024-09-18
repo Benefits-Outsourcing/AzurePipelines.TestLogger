@@ -111,7 +111,9 @@ namespace AzurePipelines.TestLogger
                     startedDate: testRun.StartedDate.ToString(_dateFormatString),
                     buildId: testRun.BuildId.GetValueOrDefault(),
                     isAutomated: true,
-                    releaseUri: testRun.ReleaseUri),
+                    releaseUri: testRun.ReleaseUri,
+                    releaseEnvironmentUri: testRun.ReleaseEnvironmentUri
+                    ),
                 _teamProject,
                 cancellationToken).ConfigureAwait(false);
 
