@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+	  <PackAsTool>true</PackAsTool>
+	  <ToolCommandName>complete-run</ToolCommandName>
+	  <PackageOutputPath>./nupkg</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
