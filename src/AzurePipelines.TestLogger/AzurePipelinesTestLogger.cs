@@ -81,6 +81,7 @@ namespace AzurePipelines.TestLogger
             int? releaseId = int.TryParse(releaseIdString, out int parsedReleaseId) ? parsedReleaseId : null;
             var isReRun = parameters.ContainsKey("rerun");
             var runIdParameter = parameters.ContainsKey("TestRunId") ? parameters["TestRunId"] : null;
+            var isPipeline = parameters.ContainsKey("pipeline");
 
             var numberOfAgentsString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.NumberOfAgents);
             if (!int.TryParse(numberOfAgentsString, out int numberOfAgents))
@@ -146,7 +147,7 @@ namespace AzurePipelines.TestLogger
                 _groupTestResultsByClassName = groupTestResultsByClassName;
             }
 
-            _queue = new LoggerQueue(_apiClient, runId, agentName, jobName, _groupTestResultsByClassName);
+            _queue = new LoggerQueue(_apiClient, runId, agentName, jobName, _groupTestResultsByClassName, isReRun: isReRun, isPipeline: isPipeline);
 
             // Register for the events
             events.TestRunMessage += TestMessageHandler;
