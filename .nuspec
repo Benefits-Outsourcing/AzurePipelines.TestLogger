@@ -21,10 +21,5 @@
   </metadata>
   <files>
     <file src="./src/AzurePipelines.TestLogger/bin/Release/net8.0/AzurePipelines.TestLogger.dll" target="lib/net8.0/AzurePipelines.TestLogger.dll" />
-    <!-- <file src="./src/CompleteTestRun/bin/Release/net8.0/CompleteTestRun.exe" target="tools/CompleteTestRun.exe" />
-    <file src="./src/CreateTestRun/bin/Release/net8.0/CreateTestRun.exe" target="tools/CreateTestRun.exe" /> -->
-
-    <file src="./src/CompleteTestRun/bin/Release/net8.0/win-x64/publish/*" target="tools/win-x64/" />
-    <file src="./src/CompleteTestRun/bin/Release/net8.0/linux-x64/publish/*" target="tools/linux-x64/" />
   </files>
 </package>

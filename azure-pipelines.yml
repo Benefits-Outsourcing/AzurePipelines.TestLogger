@@ -24,17 +24,9 @@ jobs:
   - script: dotnet restore
     displayName: 'Restore dependencies'
 
-  - script: dotnet publish -c Release -r win-x64 --self-contained
-    displayName: 'Build for Windows'
+  - script: dotnet publish -c Release
+    displayName: 'Build'
 
-  - script: dotnet publish -c Release -r linux-x64 --self-contained
-    displayName: 'Build for Linux'
-
-  # - script: sudo apt-get install -y tree
-  #   displayName: 'Install tree'
-
-  # - script: tree -d
-  #   displayName: 'List directory structure'
 
   # - script: pwd
   #   displayName: 'Show working directory'
@@ -55,6 +47,12 @@ jobs:
 
   - script: nuget pack .nuspec -OutputDirectory ./nupkg -Version $(PACKAGE_VERSION)
     displayName: 'Pack NuGet package'
+        
+  - script: sudo apt-get install -y tree
+    displayName: 'Install tree'
+
+  - script: tree -d
+    displayName: 'List directory structure'
 
   # - task: PublishPipelineArtifact@1
   #   inputs:

@@ -6,14 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
 	  <PackAsTool>true</PackAsTool>
 	  <ToolCommandName>create-run</ToolCommandName>
-	  <PackageOutputPath>./nupkg</PackageOutputPath>
+	  <PackageOutputPath>../../.nupkg</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AzurePipelines.TestLogger\AzurePipelines.TestLogger.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="DotnetToolSettings.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

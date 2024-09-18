@@ -26,9 +26,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "misc", "misc", "{B8315F74-E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleUnitTestProject", "tests\SampleUnitTestProject\SampleUnitTestProject.csproj", "{AFB35FB3-F22D-436A-84F7-A5DEFD879D3D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CreateTestRun", "src\CreateTestRun\CreateTestRun.csproj", "{48E27081-17A5-44BE-8D2C-19EAB82DEE6C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzurePipelines.CreateTestRun", "src\AzurePipelines.CreateTestRun\AzurePipelines.CreateTestRun.csproj", "{48E27081-17A5-44BE-8D2C-19EAB82DEE6C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompleteTestRun", "src\CompleteTestRun\CompleteTestRun.csproj", "{9D568684-8DAF-478F-955A-930BBC3E64CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzurePipelines.CompleteTestRun", "src\AzurePipelines.CompleteTestRun\AzurePipelines.CompleteTestRun.csproj", "{9D568684-8DAF-478F-955A-930BBC3E64CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
