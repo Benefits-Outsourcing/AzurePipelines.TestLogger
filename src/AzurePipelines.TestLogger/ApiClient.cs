@@ -68,17 +68,22 @@ namespace AzurePipelines.TestLogger
 
         public IApiClient WithDefaultCredentials()
         {
-            DefaultAzureCredential credential = new(new DefaultAzureCredentialOptions { ExcludeManagedIdentityCredential = false });
-            string[] scopes = { "499b84ac-1321-427f-aa17-267ca6975798/.default" };
+            var token = Environment.GetEnvironmentVariable(EnvironmentVariableNames.AccessToken);
 
-            var handler = new AzureAuthenticationHandler(credential, scopes)
+            if (string.IsNullOrEmpty(token))
             {
-                InnerHandler = new HttpClientHandler()
-            };
+                DefaultAzureCredential credential = new(new DefaultAzureCredentialOptions { ExcludeManagedIdentityCredential = false });
+                string[] scopes = { "499b84ac-1321-427f-aa17-267ca6975798/.default" };
 
-            _client = new HttpClient(handler);
-            var token = credential.GetToken(new TokenRequestContext(scopes)).Token;
-            //Console.WriteLine("Token: " + token);
+                var handler = new AzureAuthenticationHandler(credential, scopes)
+                {
+                    InnerHandler = new HttpClientHandler()
+                };
+
+                _client = new HttpClient(handler);
+                token = credential.GetToken(new TokenRequestContext(scopes)).Token;
+            }
+
             _connection = new VssConnection(new Uri(_organizationUrl), new VssBasicCredential(string.Empty, token));
             return this;
         }
