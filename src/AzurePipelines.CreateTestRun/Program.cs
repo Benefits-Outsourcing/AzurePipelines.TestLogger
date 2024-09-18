@@ -23,4 +23,4 @@ runId = await apiClient.AddTestRun(new TestRun()
     StartedDate = DateTime.UtcNow,
 }, CancellationToken.None);
 
-Console.WriteLine($"##vso[task.setvariable variable={EnvironmentVariableNames.TestRunId}]{runId}");
+Console.WriteLine($"##vso[task.setvariable variable={EnvironmentVariableNames.TestRunId};isOutput=true]{runId}");
