@@ -46,22 +46,19 @@ jobs:
     displayName: 'Generate package version based on date'
 
   - script: nuget pack .nuspec -OutputDirectory ./nupkg -Version $(PACKAGE_VERSION)
-    displayName: 'Pack NuGet package'
+    displayName: 'Pack NuGet package: AzurePipelines.TestLogger'
 
-  - script: dotnet pack ./src/AzurePipelines.CompleteTestRun/AzurePipelines.CompleteTestRun.csproj -c Release -o ./nupkg /p:PackageVersion=$(PACKAGE_VERSION)
-    displayName: 'Pack NuGet package: AzurePipelines.CompleteTestRun'
-
-  - script: dotnet pack ./src/AzurePipelines.CreateTestRun/AzurePipelines.CreateTestRun.csproj -c Release -o ./nupkg /p:PackageVersion=$(PACKAGE_VERSION)
-    displayName: 'Pack NuGet package: AzurePipelines.CreateTestRun'
+  - script: dotnet pack ./src/AzurePipelines.AdoTools/AzurePipelines.AdoTools.csproj -c Release -o ./nupkg /p:PackageVersion=$(PACKAGE_VERSION)
+    displayName: 'Pack NuGet package: AzurePipelines.AdoTools'
     
-  - script: ls -R ./nupkg
-    displayName: 'List contents of nupkg directory'
+  # - script: ls -R ./nupkg
+  #   displayName: 'List contents of nupkg directory'
         
-  - script: sudo apt-get install -y tree
-    displayName: 'Install tree'
+  # - script: sudo apt-get install -y tree
+  #   displayName: 'Install tree'
 
-  - script: tree -d
-    displayName: 'List directory structure'
+  # - script: tree -d
+  #   displayName: 'List directory structure'
 
   # - task: PublishPipelineArtifact@1
   #   inputs:
