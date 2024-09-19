@@ -15,7 +15,6 @@ using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
-using Newtonsoft.Json;
 using TestOutcome = Microsoft.VisualStudio.TestPlatform.ObjectModel.TestOutcome;
 
 namespace AzurePipelines.TestLogger
@@ -167,7 +166,7 @@ namespace AzurePipelines.TestLogger
         public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId)
         {
             TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
-            return (await testClient.GetTestRunsAsync(_teamProject, buildUri: $"vstfs:///Build/Build/{buildId}").ConfigureAwait(false)).Where(x => x.State != "255").ToList();
+            return (await testClient.GetTestRunsAsync(_teamProject, buildUri: $"vstfs:///Build/Build/{buildId}", includeRunDetails: true).ConfigureAwait(false)).Where(x => x.State != "255").ToList();
         }
 
         public async Task<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun> GetRun(int runId)
@@ -176,23 +175,10 @@ namespace AzurePipelines.TestLogger
             return await testClient.GetTestRunByIdAsync(_teamProject, runId).ConfigureAwait(false);
         }
 
-        public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int? buildId, int? releaseId)
+        public async Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId, int releaseId)
         {
-            // build a query string so that buildId and releaseId can be passed as query parameters. Both are optional.
-            string queryString = string.Empty;
-            if (buildId != null)
-            {
-                queryString += $"buildIds={buildId}";
-            }
-            if (releaseId != null)
-            {
-                queryString += string.IsNullOrEmpty(queryString) ? $"releaseIds={releaseId}" : $"&releaseIds={releaseId}";
-            }
-
-
-            string responseString = await SendAsync(HttpMethod.Get, "", null, CancellationToken.None, queryString: queryString).ConfigureAwait(false);
-            return JsonConvert.DeserializeObject<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>>(responseString);
-
+            var allBuildRuns = await GetRuns(buildId);
+            return allBuildRuns.Where(x => x.Release != null && x.Release.Id == releaseId).ToList();
         }
 
         public async Task UpdateTestResults(int testRunId, VstpTestRunComplete testRunComplete, CancellationToken cancellationToken)

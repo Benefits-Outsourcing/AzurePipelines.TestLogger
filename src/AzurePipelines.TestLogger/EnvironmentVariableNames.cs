@@ -13,6 +13,7 @@
         public const string ReleaseUri = "RELEASE_RELEASEURI";
         public const string ReleaseEnvironmentUri = "RELEASE_ENVIRONMENTURI";
         public const string ReleaseId = "RELEASE_RELEASEID";
+        public const string ReleaseAttempt = "RELEASE_ATTEMPTNUMBER";
         public const string AgentNumber = "SYSTEM_JOBPOSITIONINPHASE";
         public const string NumberOfAgents = "SYSTEM_TOTALJOBSINPHASE";
     }

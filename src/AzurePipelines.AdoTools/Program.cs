@@ -24,7 +24,7 @@ switch (args[0])
     case "create-run":
         runId = await apiClient.AddTestRun(new TestRun()
         {
-            Name = $"{Environment.GetEnvironmentVariable("RELEASE_DEFINITIONNAME")}: {Environment.GetEnvironmentVariable("RELEASE_RELEASENAME")}",
+            Name = $"{Environment.GetEnvironmentVariable("RELEASE_DEFINITIONNAME")}: {Environment.GetEnvironmentVariable("RELEASE_RELEASENAME")}: ATTEMPT {Environment.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseAttempt)}",
             BuildId = buildId,
             IsAutomated = true,
             ReleaseUri = releaseUri,

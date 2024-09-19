@@ -34,7 +34,7 @@ namespace AzurePipelines.TestLogger
         Task RemoveTestRun(int testRunId, CancellationToken cancellationToken);
 
         Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId);
-        Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int? buildId, int? releaseId);
+        Task<List<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun>> GetRuns(int buildId, int releaseId);
         Task<Microsoft.TeamFoundation.TestManagement.WebApi.TestRun> GetRun(int runId);
     }
 }
