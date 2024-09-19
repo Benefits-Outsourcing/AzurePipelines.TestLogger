@@ -83,6 +83,11 @@ namespace AzurePipelines.TestLogger
                 _client = new HttpClient(handler);
                 token = credential.GetToken(new TokenRequestContext(scopes)).Token;
             }
+            else
+            {
+                _client = new HttpClient();
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($":{token}")));
+            }
 
             _connection = new VssConnection(new Uri(_organizationUrl), new VssBasicCredential(string.Empty, token));
             return this;
