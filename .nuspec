@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <metadata>
-    <id>AzurePipeline.TestLogger</id>
+    <id>AzurePipelines.TestLogger</id>
     <version>1.0.0</version>
     <authors>Paul White</authors>
     <owners>Paul White</owners>

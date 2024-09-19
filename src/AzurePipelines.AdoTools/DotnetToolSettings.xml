@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DotNetCliTool>
+    <Commands>
+		<Command Name="create-run" EntryPoint="AzurePipelines.CreateTestRun.dll" Runner="dotnet" Arguments="start" />
+		<Command Name="get-run" EntryPoint="AzurePipelines.CreateTestRun.dll" Runner="dotnet" Arguments="get" />
+		<Command Name="complete-run" EntryPoint="AzurePipelines.CreateTestRun.dll" Runner="dotnet" Arguments="complete" />
+    </Commands>
+</DotNetCliTool>
