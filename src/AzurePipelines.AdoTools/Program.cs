@@ -1,5 +1,11 @@
 ﻿using AzurePipelines.TestLogger;
 
+if (args.Length == 0)
+{
+    Console.WriteLine("No arguments provided.");
+    return;
+}
+
 ApiClientFactory apiClientFactory = new ApiClientFactory();
 var baseUri = Environment.GetEnvironmentVariable(EnvironmentVariableNames.TeamFoundationCollectionUri);
 var project = Environment.GetEnvironmentVariable(EnvironmentVariableNames.TeamProject);
@@ -15,7 +21,7 @@ int runId = 0;
 
 switch (args[0])
 {
-    case "start":
+    case "create-run":
         runId = await apiClient.AddTestRun(new TestRun()
         {
             Name = $"{Environment.GetEnvironmentVariable("RELEASE_DEFINITIONNAME")}: {Environment.GetEnvironmentVariable("RELEASE_RELEASENAME")}",
@@ -26,11 +32,11 @@ switch (args[0])
             StartedDate = DateTime.UtcNow,
         }, CancellationToken.None);
         break;
-    case "get":
+    case "get-run":
         runId = (await apiClient.GetRuns(buildId, releaseId)).Last().Id;
         Console.WriteLine($"##vso[task.setvariable variable={EnvironmentVariableNames.TestRunId};isOutput=true]{runId}");
         break;
-    case "complete":
+    case "complete-run":
         runId = (await apiClient.GetRuns(buildId, releaseId)).Last().Id;
         await apiClient.MarkTestRunCompleted(runId, false, DateTime.UtcNow, CancellationToken.None);
         break;

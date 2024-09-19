@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
 	  <PackAsTool>true</PackAsTool>
-	  <ToolCommandName>create-run</ToolCommandName>
+	  <ToolCommandName>az-test</ToolCommandName>
 	  <PackageOutputPath>../../.nupkg</PackageOutputPath>
   </PropertyGroup>
 
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="DotnetToolSettings.xml">
+    <None Update="___Nope.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
