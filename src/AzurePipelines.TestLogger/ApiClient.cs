@@ -549,6 +549,8 @@ namespace AzurePipelines.TestLogger
 
                     string localPath;
 
+                    Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.ToString()}...");
+
                     if (attachment.Uri.IsAbsoluteUri)
                     {
                         localPath = attachment.Uri.LocalPath;
