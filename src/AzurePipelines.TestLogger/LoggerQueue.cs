@@ -83,10 +83,10 @@ namespace AzurePipelines.TestLogger
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Critical error in LoggerQueue.ConsumeItemsAsync");
+                    Console.WriteLine("Fatal error in LoggerQueue.ConsumeItemsAsync");
                     Console.WriteLine(ex);
                     Console.WriteLine(ex.StackTrace);
-                    return;
+                    throw;
                 }
             }
         }

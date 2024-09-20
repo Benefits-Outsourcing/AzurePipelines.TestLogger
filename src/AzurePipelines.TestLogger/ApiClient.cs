@@ -543,16 +543,26 @@ namespace AzurePipelines.TestLogger
 
             foreach (AttachmentSet attachmentSet in attachmentSets)
             {
-                if (attachmentSet.Attachments.Count > 0)
-                {
-                    Console.WriteLine($"Attaching files in set {attachmentSet.DisplayName} {attachmentSet.Uri}...");
-                }
 
                 foreach (UriDataAttachment attachment in attachmentSet.Attachments)
                 {
+
+                    string localPath;
+
+                    if (attachment.Uri.IsAbsoluteUri)
+                    {
+                        localPath = attachment.Uri.LocalPath;
+                    }
+                    else
+                    {
+                        // Handle relative URI case
+                        // You might need to resolve the relative URI to an absolute path based on your application's context
+                        localPath = Path.GetFullPath(attachment.Uri.ToString());
+                    }
+
                     Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.LocalPath}...");
 
-                    await AttachFile(testRunId, testResultId, testSubResultId, attachment.Uri.LocalPath, attachment.Description);
+                    await AttachFile(testRunId, testResultId, testSubResultId, localPath, attachment.Description);
                 }
             }
         }
