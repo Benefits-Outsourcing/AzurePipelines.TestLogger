@@ -25,7 +25,7 @@ namespace AzurePipelines.TestLogger
                 {
                     Dictionary<string, object> testResultProperties = GetTestResultProperties(y);
                     testResultProperties.Add("TestResult", new Dictionary<string, object> { { "Id", parent.Id } });
-                    testResultProperties.Add("id", y.Id);
+                    testResultProperties.Add("id", y.TestCaseId);
 
                     return testResultProperties.ToJson();
                 }));

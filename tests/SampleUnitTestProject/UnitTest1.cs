@@ -22,6 +22,8 @@ namespace SampleUnitTestProject
         [TestMethod]
         public void TestMethodThatFails()
         {
+            TestContext.WriteLine("Faily test fails");
+            TestContext.AddResultFile("C:\\TeamCity\\Repos\\AzurePipelines.TestLogger\\LICENSE");
             Assert.Fail("This test is expected to fail");
         }
 
@@ -30,6 +32,8 @@ namespace SampleUnitTestProject
         {
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("Flakey")))
             {
+                TestContext.WriteLine("Flakey test is flakey");
+                TestContext.AddResultFile("C:\\TeamCity\\Repos\\AzurePipelines.TestLogger\\README.md");
                 Assert.Fail("Flakey");
             }
         }

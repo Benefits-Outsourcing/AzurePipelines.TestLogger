@@ -94,10 +94,15 @@ namespace AzurePipelines.TestLogger.Tests
                 File.Delete("TestCaseResult_cache.json");
             }
 
+            if (File.Exists("testrunid.txt"))
+            {
+                File.Delete("testrunid.txt");
+            }
+
             // Given
             string fullyQualifiedTestMethodName = GetFullyQualifiedTestMethodName(
-                typeof(UnitTest1),
-                nameof(UnitTest1.TestMethod));
+            typeof(UnitTest1),
+            nameof(UnitTest1.TestMethod));
 
             ApiClientFactory apiClientFactory = new ApiClientFactory();
             IApiClient apiClient = apiClientFactory.CreateWithDefaultCredentials("https://dev.azure.com/wtw-bda-outsourcing-product/", "BenefitConnect", "7.0");
@@ -121,7 +126,9 @@ namespace AzurePipelines.TestLogger.Tests
                    buildRequestedFor: "PW UNIT TEST",
                    filter: "ClassName=SampleUnitTestProject.UnitTest1",
                    agentName: "No AGENT",
-                   agentJobName: "Job 1");
+                   agentJobName: "Job 1",
+                   iteration: 1,
+                   maxiteration: 3);
 
             //Assert.That(exitCode, Is.EqualTo(0));
 
@@ -233,7 +240,9 @@ namespace AzurePipelines.TestLogger.Tests
             string agentJobName = "jobName",
             string releaseUri = null,
             string filter = null,
-            string testRunId = null)
+            string testRunId = null,
+            int maxiteration = 1,
+            int iteration = 1)
         {
             List<string> loggerArguments = new List<string>
             {
@@ -241,7 +250,8 @@ namespace AzurePipelines.TestLogger.Tests
                 $"Verbose={verbose}",
                 $"UseDefaultCredentials={useDefaultCredentials}",
                 $"ApiVersion={apiVersion}",
-                $"GroupTestResultsByClassName={groupTestResultsByClassName}"
+                $"maxiteration={maxiteration}",
+                $"iteration={iteration}"
             };
 
             if (testRunId != null)

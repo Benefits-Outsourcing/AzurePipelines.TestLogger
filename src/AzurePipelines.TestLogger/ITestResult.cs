@@ -7,7 +7,7 @@ namespace AzurePipelines.TestLogger
 {
     public interface ITestResult
     {
-        Guid Id { get; }
+        Guid TestCaseId { get; }
         string Source { get; }
         string FullyQualifiedName { get; }
         string DisplayName { get; }

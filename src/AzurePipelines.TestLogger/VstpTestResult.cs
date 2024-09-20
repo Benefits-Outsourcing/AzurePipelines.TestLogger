@@ -14,7 +14,7 @@ namespace AzurePipelines.TestLogger
             _testResult = testResult;
         }
 
-        public Guid Id => _testResult.TestCase.Id;
+        public Guid TestCaseId => _testResult.TestCase.Id;
 
         public string Source => _testResult.TestCase.Source;
 

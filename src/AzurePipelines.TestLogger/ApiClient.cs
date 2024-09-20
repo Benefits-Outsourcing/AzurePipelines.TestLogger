@@ -134,19 +134,6 @@ namespace AzurePipelines.TestLogger
             return createdTestRun.Id;
         }
 
-        public async Task UpdateTestResults(int testRunId, Dictionary<string, TestResultParent> testCaseTestResults, IEnumerable<IGrouping<string, ITestResult>> testResultsByParent, CancellationToken cancellationToken)
-        {
-            DateTime completedDate = DateTime.UtcNow;
-
-            string requestBody = GetTestResults(testCaseTestResults, testResultsByParent, completedDate);
-
-            await SendAsync(new HttpMethod("PATCH"), $"/{testRunId}/results", requestBody, cancellationToken).ConfigureAwait(false);
-
-            await UploadConsoleOutputsAndErrors(testRunId, testCaseTestResults, testResultsByParent, cancellationToken);
-
-            await UploadTestResultFiles(testRunId, testCaseTestResults, testResultsByParent, cancellationToken);
-        }
-
         public async Task<List<TestCaseResult>> GetTestResults(int testRunId, CancellationToken cancellationToken)
         {
             TestManagementHttpClient testClient = _connection.GetClient<TestManagementHttpClient>();
@@ -181,11 +168,6 @@ namespace AzurePipelines.TestLogger
             return allBuildRuns.Where(x => x.Release != null && x.Release.Id == releaseId).ToList();
         }
 
-        public async Task UpdateTestResults(int testRunId, VstpTestRunComplete testRunComplete, CancellationToken cancellationToken)
-        {
-            await UploadTestResultFiles(testRunId, null, testRunComplete.Attachments, cancellationToken);
-        }
-
         public async Task AddTestCases(int testRunId, params ITestResult[] results)
         {
             // use VssConnection
@@ -200,26 +182,26 @@ namespace AzurePipelines.TestLogger
                     {
                         var parent = previousTestResults.SingleOrDefault(cached => cached.AutomatedTestName.Equals(result.DisplayName));
                         var subresults = new List<TestSubResult>();
-                        if (parent.ResultGroupType != ResultGroupType.Rerun)
-                        {
-                            subresults.Add(
-                                // copy the parent result to the subresult so that we keep the first failed test as a subresult
-                                new TestSubResult
-                                {
-                                    ParentId = parent.Id,
-                                    DisplayName = $"#1 {result.DisplayName}",
-                                    Outcome = parent.Outcome,
-                                    DurationInMs = (long)parent.DurationInMs,
-                                    ErrorMessage = parent.ErrorMessage,
-                                    StackTrace = parent.StackTrace,
-                                    ResultGroupType = ResultGroupType.None,
-                                    ComputerName = Environment.MachineName,
-                                    CompletedDate = parent.CompletedDate,
-                                    StartedDate = parent.StartedDate,
-                                    CustomFields = new List<CustomTestField> { new CustomTestField { FieldName = "AttemptId", Value = 1 } }
+                        //if (parent.ResultGroupType != ResultGroupType.Rerun)
+                        //{
+                        //    subresults.Add(
+                        //        // copy the parent result to the subresult so that we keep the first failed test as a subresult
+                        //        new TestSubResult
+                        //        {
+                        //            ParentId = parent.Id,
+                        //            DisplayName = $"#1 {result.DisplayName}",
+                        //            Outcome = parent.Outcome,
+                        //            DurationInMs = (long)parent.DurationInMs,
+                        //            ErrorMessage = parent.ErrorMessage,
+                        //            StackTrace = parent.StackTrace,
+                        //            ResultGroupType = ResultGroupType.None,
+                        //            ComputerName = Environment.MachineName,
+                        //            CompletedDate = parent.CompletedDate,
+                        //            StartedDate = parent.StartedDate,
+                        //            CustomFields = new List<CustomTestField> { new CustomTestField { FieldName = "AttemptId", Value = 1 } }
 
-                                });
-                        }
+                        //        });
+                        //}
                         // add the latest test result
                         subresults.Add(new TestSubResult
                         {
@@ -263,6 +245,16 @@ namespace AzurePipelines.TestLogger
                     runId: testRunId,
                     cancellationToken: CancellationToken.None
                 );
+
+                foreach (var updated in updatedTestCaseResults)
+                {
+                    var result = results.Single(r => r.DisplayName.Equals(updated.AutomatedTestName));
+                    //// serialized update to json and output to console (using newtonsoft json)
+                    //Console.WriteLine(JsonConvert.SerializeObject(updated));
+                    UploadConsoleOutputsAndErrors(testRunId, result.Messages, updated.Id, updated.SubResults.Single().Id).ConfigureAwait(false).GetAwaiter().GetResult();
+                    UploadTestResultFiles(testRunId, updated.Id, updated.SubResults.Single().Id, result.Attachments, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+
+                }
             }
             else
             {
@@ -277,9 +269,19 @@ namespace AzurePipelines.TestLogger
                     Outcome = result.Outcome.ToString(),
                     // FailingSince TODO
                     DurationInMs = Convert.ToInt64(result.Duration.TotalMilliseconds),
-                    //ErrorMessage = result.ErrorMessage,
-                    //StackTrace = result.ErrorStackTrace,
-                    ResultGroupType = ResultGroupType.None,
+                    ErrorMessage = result.ErrorMessage,
+                    StackTrace = result.ErrorStackTrace,
+                    ResultGroupType = result.Outcome == TestOutcome.Passed ? ResultGroupType.None : ResultGroupType.Rerun,
+                    SubResults = result.Outcome == TestOutcome.Passed ? null : new List<TestSubResult> {
+                        new TestSubResult { Outcome = result.Outcome.ToString(),
+                            ErrorMessage = result.ErrorMessage,
+                            StackTrace = result.ErrorStackTrace,
+                            DisplayName = $"#1 {result.DisplayName}",
+                            ComputerName = Environment.MachineName,
+                            StartedDate = result.StartTime.UtcDateTime,
+                            CompletedDate = result.StartTime.UtcDateTime,
+                            CustomFields = new List<CustomTestField> { new CustomTestField { FieldName = "AttemptId", Value = 1 } }
+                        } },
                 }).ToArray();
 
                 var savedCases = await testClient.AddTestResultsToTestRunAsync(
@@ -292,10 +294,16 @@ namespace AzurePipelines.TestLogger
                 testCases.ForEach(testCase =>
                 {
                     testCase.Revision = 1;
-                    testCase.Id = savedCases.Single(saved => saved.AutomatedTestName.Equals(testCase.AutomatedTestName)).Id;
+                    var savedTestCase = savedCases.Single(saved => saved.AutomatedTestName.Equals(testCase.AutomatedTestName));
+                    var result = results.Single(r => r.DisplayName.Equals(testCase.AutomatedTestName));
+                    testCase.Id = savedTestCase.Id;
+                    if (testCase.Outcome == "Failed")
+                    {
+                        UploadConsoleOutputsAndErrors(testRunId, result.Messages, testCase.Id, savedTestCase.SubResults.Single().Id).ConfigureAwait(false).GetAwaiter().GetResult();
+                        UploadTestResultFiles(testRunId, testCase.Id, savedTestCase.SubResults.Single().Id, result.Attachments, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+                    }
+
                 });
-
-
                 TestCaseResultCache.AddRange(testCases);
             }
 
@@ -350,6 +358,17 @@ namespace AzurePipelines.TestLogger
 
             await testClient.UpdateTestRunAsync(
                     new RunUpdateModel(state: aborted ? "Aborted" : "Completed", completedDate: completedDate.ToString(_dateFormatString)),
+                    project: _teamProject,
+                    runId: testRunId,
+                    cancellationToken: CancellationToken.None).ConfigureAwait(false);
+        }
+
+        public async Task ReopenTestRun(int testRunId, CancellationToken cancellationToken)
+        {
+            var testClient = _connection.GetClient<TestManagementHttpClient>();
+
+            await testClient.UpdateTestRunAsync(
+                    new RunUpdateModel(state: "InProgress", completedDate: ""),
                     project: _teamProject,
                     runId: testRunId,
                     cancellationToken: CancellationToken.None).ConfigureAwait(false);
@@ -479,55 +498,34 @@ namespace AzurePipelines.TestLogger
             return responseBody;
         }
 
-        private async Task UploadConsoleOutputsAndErrors(int testRunId, Dictionary<string, TestResultParent> testCaseTestResults, IEnumerable<IGrouping<string, ITestResult>> testResultsByParent, CancellationToken cancellationToken)
+        private async Task UploadConsoleOutputsAndErrors(int testRunId, IList<TestResultMessage> messages, int testResultId, int? testSubResultId)
         {
-            foreach (IGrouping<string, ITestResult> testResultByParent in testResultsByParent)
+            StringBuilder stdErr = new StringBuilder();
+            StringBuilder stdOut = new StringBuilder();
+            foreach (TestResultMessage m in messages)
             {
-                TestResultParent parent = testCaseTestResults[testResultByParent.Key];
-
-                foreach (ITestResult testResult in testResultByParent.Select(x => x))
+                if (TestResultMessage.StandardOutCategory.Equals(m.Category, StringComparison.OrdinalIgnoreCase))
                 {
-                    StringBuilder stdErr = new StringBuilder();
-                    StringBuilder stdOut = new StringBuilder();
-                    foreach (TestResultMessage m in testResult.Messages)
-                    {
-                        if (TestResultMessage.StandardOutCategory.Equals(m.Category, StringComparison.OrdinalIgnoreCase))
-                        {
-                            stdOut.AppendLine(m.Text);
-                        }
-                        else if (TestResultMessage.StandardErrorCategory.Equals(m.Category, StringComparison.OrdinalIgnoreCase))
-                        {
-                            stdErr.AppendLine(m.Text);
-                        }
-                    }
-
-                    if (stdOut.Length > 0)
-                    {
-                        await AttachTextAsFile(testRunId, parent.Id, stdOut.ToString(), "console output.txt", null, cancellationToken);
-                    }
-
-                    if (stdErr.Length > 0)
-                    {
-                        await AttachTextAsFile(testRunId, parent.Id, stdErr.ToString(), "console error.txt", null, cancellationToken);
-                    }
+                    stdOut.AppendLine(m.Text);
                 }
+                else if (TestResultMessage.StandardErrorCategory.Equals(m.Category, StringComparison.OrdinalIgnoreCase))
+                {
+                    stdErr.AppendLine(m.Text);
+                }
+            }
+
+            if (stdOut.Length > 0)
+            {
+                await AttachTextAsFile(testRunId, testResultId, testSubResultId, stdOut.ToString(), "console output.txt", null);
+            }
+
+            if (stdErr.Length > 0)
+            {
+                await AttachTextAsFile(testRunId, testResultId, testSubResultId, stdErr.ToString(), "console error.txt", null);
             }
         }
 
-        private async Task UploadTestResultFiles(int testRunId, Dictionary<string, TestResultParent> testCaseTestResults, IEnumerable<IGrouping<string, ITestResult>> testResultsByParent, CancellationToken cancellationToken)
-        {
-            foreach (IGrouping<string, ITestResult> testResultByParent in testResultsByParent)
-            {
-                TestResultParent parent = testCaseTestResults[testResultByParent.Key];
-
-                foreach (ITestResult testResult in testResultByParent.Select(x => x))
-                {
-                    await UploadTestResultFiles(testRunId, parent.Id, testResult.Attachments, cancellationToken);
-                }
-            }
-        }
-
-        private async Task UploadTestResultFiles(int testRunId, int? testResultId, ICollection<AttachmentSet> attachmentSets, CancellationToken cancellationToken)
+        private async Task UploadTestResultFiles(int testRunId, int? testResultId, int? testSubResultId, ICollection<AttachmentSet> attachmentSets, CancellationToken cancellationToken)
         {
             if (attachmentSets.Count > 0)
             {
@@ -554,25 +552,25 @@ namespace AzurePipelines.TestLogger
                 {
                     Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.LocalPath}...");
 
-                    await AttachFile(testRunId, testResultId, attachment.Uri.LocalPath, attachment.Description, cancellationToken);
+                    await AttachFile(testRunId, testResultId, testSubResultId, attachment.Uri.LocalPath, attachment.Description);
                 }
             }
         }
 
-        private async Task AttachTextAsFile(int testRunId, int testResultId, string fileContents, string fileName, string comment, CancellationToken cancellationToken)
+        private async Task AttachTextAsFile(int testRunId, int testResultId, int? testSubResultId, string fileContents, string fileName, string comment)
         {
             byte[] contentAsBytes = Encoding.UTF8.GetBytes(fileContents);
-            await AttachFile(testRunId, testResultId, contentAsBytes, fileName, comment, cancellationToken);
+            await AttachFile(testRunId, testResultId, testSubResultId, contentAsBytes, fileName, comment);
         }
 
-        private async Task AttachFile(int testRunId, int? testResultId, string filePath, string comment, CancellationToken cancellationToken)
+        private async Task AttachFile(int testRunId, int? testResultId, int? testSubResultId, string filePath, string comment)
         {
             byte[] contentAsBytes = File.ReadAllBytes(filePath);
             string fileName = Path.GetFileName(filePath);
-            await AttachFile(testRunId, testResultId, contentAsBytes, fileName, comment, cancellationToken);
+            await AttachFile(testRunId, testResultId, testSubResultId, contentAsBytes, fileName, comment);
         }
 
-        private async Task AttachFile(int testRunId, int? testResultId, byte[] fileContents, string fileName, string comment, CancellationToken cancellationToken)
+        private async Task AttachFile(int testRunId, int? testResultId, int? testSubResultId, byte[] fileContents, string fileName, string comment)
         {
             string contentAsBase64 = Convert.ToBase64String(fileContents);
 
@@ -593,17 +591,23 @@ namespace AzurePipelines.TestLogger
 
             string requestBody = props.ToJson();
 
+            var testClient = _connection.GetClient<TestManagementHttpClient>();
+
             if (testResultId == null)
             {
-                // https://docs.microsoft.com/en-us/rest/api/azure/devops/test/attachments/create%20test%20run%20attachment
-                // https://docs.microsoft.com/en-us/previous-versions/azure/devops/integrate/previous-apis/test/attachments?view=tfs-2015#attach-a-file-to-a-test-run
-                await SendAsync(new HttpMethod("POST"), $"/{testRunId}/attachments", requestBody, cancellationToken, "2.0-preview").ConfigureAwait(false);
+                await testClient.CreateTestRunAttachmentAsync(new TestAttachmentRequestModel(stream: contentAsBase64, fileName, comment, attachmentType), _teamProject, testRunId, null, CancellationToken.None);
             }
             else
             {
-                // https://docs.microsoft.com/en-us/rest/api/azure/devops/test/attachments/create%20test%20result%20attachment
-                // https://docs.microsoft.com/en-us/azure/devops/integrate/previous-apis/test/attachments?view=tfs-2015#attach-a-file-to-a-test-result
-                await SendAsync(new HttpMethod("POST"), $"/{testRunId}/results/{testResultId}/attachments", requestBody, cancellationToken, "2.0-preview").ConfigureAwait(false);
+                if (testSubResultId.HasValue)
+                {
+                    await testClient.CreateTestSubResultAttachmentAsync(new TestAttachmentRequestModel(stream: contentAsBase64, fileName, comment, attachmentType), _teamProject, testRunId, testResultId.Value, testSubResultId.Value, CancellationToken.None);
+                }
+                else
+                {
+                    await testClient.CreateTestResultAttachmentAsync(new TestAttachmentRequestModel(stream: contentAsBase64, fileName, comment, attachmentType), _teamProject, testRunId, testResultId.Value, CancellationToken.None);
+                }
+
             }
         }
     }

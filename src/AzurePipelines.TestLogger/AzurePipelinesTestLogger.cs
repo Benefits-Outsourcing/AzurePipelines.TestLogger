@@ -79,7 +79,20 @@ namespace AzurePipelines.TestLogger
             var releaseUri = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseUri);
             var releaseIdString = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.ReleaseId);
             int? releaseId = int.TryParse(releaseIdString, out int parsedReleaseId) ? parsedReleaseId : null;
-            var isReRun = parameters.ContainsKey("rerun");
+            if (!parameters.TryGetValue("iteration", out var iterationParameter))
+            {
+                iterationParameter = "1";
+            }
+            int iteration = int.Parse(iterationParameter);
+
+            if (!parameters.TryGetValue("maxiteration", out var maxIterationParamter))
+            {
+                maxIterationParamter = "1";
+            }
+
+            int maxIteration = int.Parse(maxIterationParamter);
+            var isReRun = maxIteration <= iteration;
+
             var runIdParameter = _environmentVariableProvider.GetEnvironmentVariable(EnvironmentVariableNames.TestRunId);
             var isPipeline = parameters.ContainsKey("pipeline");
 
@@ -134,20 +147,24 @@ namespace AzurePipelines.TestLogger
 
             var runId = !string.IsNullOrWhiteSpace(runIdParameter) ? int.Parse(runIdParameter) : isReRun ? GetInProgressRunId() : 0;
 
-            if (runId == 0 && agentNumber == 1 && numberOfAgents == 1)
+            if (!isPipeline)
             {
-                // Single agent or local run, just create a run to log against
-                runId = _apiClient.AddTestRun(new TestRun { Name = jobName, StartedDate = DateTime.UtcNow, BuildId = buildId, IsAutomated = true, ReleaseUri = releaseUri }, cancellationToken: CancellationToken.None).GetAwaiter().GetResult();
-                SaveInProgressRunId(runId);
+                if (runId > 0)
+                {
+                    _apiClient.ReopenTestRun(runId, CancellationToken.None);
+                }
+                else
+                {
+                    // local run, just create a run to log against
+                    runId = _apiClient.AddTestRun(new TestRun { Name = jobName, StartedDate = DateTime.UtcNow, BuildId = buildId, IsAutomated = true, ReleaseUri = releaseUri }, cancellationToken: CancellationToken.None).GetAwaiter().GetResult();
+                    SaveInProgressRunId(runId);
+                }
+
             }
 
-            if (parameters.TryGetValue(TestLoggerParameters.GroupTestResultsByClassName, out string groupTestResultsByClassNameString)
-                && bool.TryParse(groupTestResultsByClassNameString, out bool groupTestResultsByClassName))
-            {
-                _groupTestResultsByClassName = groupTestResultsByClassName;
-            }
 
-            _queue = new LoggerQueue(_apiClient, runId, agentName, jobName, _groupTestResultsByClassName, isReRun: isReRun, isPipeline: isPipeline);
+
+            _queue = new LoggerQueue(_apiClient, runId, agentName, jobName, iteration, maxIteration, isPipeline: isPipeline);
 
             // Register for the events
             events.TestRunMessage += TestMessageHandler;
