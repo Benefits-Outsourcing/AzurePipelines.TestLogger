@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -525,6 +526,20 @@ namespace AzurePipelines.TestLogger
             }
         }
 
+        private string NormalizePathForLinux(string path)
+        {
+            // Replace backslashes with forward slashes
+            path = path.Replace('\\', '/');
+
+            // If the path is relative, convert it to an absolute path
+            if (!Path.IsPathRooted(path))
+            {
+                path = Path.GetFullPath(path);
+            }
+
+            return path;
+        }
+
         private async Task UploadTestResultFiles(int testRunId, int? testResultId, int? testSubResultId, ICollection<AttachmentSet> attachmentSets, CancellationToken cancellationToken)
         {
             if (attachmentSets.Count > 0)
@@ -547,22 +562,27 @@ namespace AzurePipelines.TestLogger
                 foreach (UriDataAttachment attachment in attachmentSet.Attachments)
                 {
 
-                    string localPath;
+                    string localPath = attachment.Uri.ToString();
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        localPath = NormalizePathForLinux(localPath);
+                    }
 
                     Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.ToString()}...");
 
-                    if (attachment.Uri.IsAbsoluteUri)
-                    {
-                        localPath = attachment.Uri.LocalPath;
-                    }
-                    else
-                    {
-                        // Handle relative URI case
-                        // You might need to resolve the relative URI to an absolute path based on your application's context
-                        localPath = Path.GetFullPath(attachment.Uri.ToString());
-                    }
+                    //if (attachment.Uri.IsAbsoluteUri)
+                    //{
+                    //    localPath = attachment.Uri.LocalPath;
+                    //}
+                    //else
+                    //{
+                    //    // Handle relative URI case
+                    //    // You might need to resolve the relative URI to an absolute path based on your application's context
+                    //    localPath = Path.GetFullPath(attachment.Uri.ToString());
+                    //}
 
-                    Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.LocalPath}...");
+                    //Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.LocalPath}...");
 
                     await AttachFile(testRunId, testResultId, testSubResultId, localPath, attachment.Description);
                 }
