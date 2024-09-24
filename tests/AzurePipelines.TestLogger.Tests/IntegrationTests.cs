@@ -264,6 +264,7 @@ namespace AzurePipelines.TestLogger.Tests
                 "test",
                 $"\"{_sampleUnitTestProjectDllFilePath}\"",
                 $"--filter {(filter ?? "\"FullyQualifiedName={testMethod}\"")}",
+               // $"--logger \"trx;LogFileName=test_results_$repeat.trx\" --results-directory ./TestResults/",
                 $"--logger \"{string.Join(";", loggerArguments)}\"",
                 $"--test-adapter-path \"{_azurePipelinesTestLoggerAssemblyPath}\""
             };

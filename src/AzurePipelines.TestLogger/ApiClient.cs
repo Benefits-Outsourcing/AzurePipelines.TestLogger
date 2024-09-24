@@ -474,7 +474,7 @@ namespace AzurePipelines.TestLogger
                 foreach (UriDataAttachment attachment in attachmentSet.Attachments)
                 {
 
-                    string localPath = $"TestResults/{attachment.Uri}";
+                    string localPath = attachment.Uri.LocalPath;
 
                     // 
 
@@ -483,7 +483,7 @@ namespace AzurePipelines.TestLogger
                         localPath = NormalizePathForLinux(localPath);
                     }
 
-                    Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.ToString()}...");
+                    Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.ToString()}...localpath: {localPath}");
 
                     //if (attachment.Uri.IsAbsoluteUri)
                     //{
