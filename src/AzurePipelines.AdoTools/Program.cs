@@ -1,4 +1,5 @@
-﻿using AzurePipelines.TestLogger;
+﻿using AzurePipelines.AdoTools.PullRequests;
+using AzurePipelines.TestLogger;
 
 if (args.Length == 0)
 {
@@ -39,6 +40,13 @@ switch (args[0])
     case "complete-run":
         runId = (await apiClient.GetRuns(buildId, releaseId)).Last().Id;
         await apiClient.MarkTestRunCompleted(runId, false, DateTime.UtcNow, CancellationToken.None);
+        break;
+    case "pr-stats":
+        if (args.Length < 2)
+        {
+            throw new ArgumentException("User email is required");
+        }
+        await new PRWorker(apiClient).Report(args[1], args.Length > 2 ? args[2] : "ESS");
         break;
     default:
         throw new ArgumentException("Invalid argument");

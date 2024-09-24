@@ -93,6 +93,11 @@ namespace AzurePipelines.TestLogger
             return this;
         }
 
+        public T GetClient<T>() where T : IVssHttpClient
+        {
+            return _connection.GetClient<T>();
+        }
+
         public async Task<int> AddTestRun(TestRun testRun, CancellationToken cancellationToken)
         {
             // string requestBody = new Dictionary<string, object>
@@ -310,49 +315,6 @@ namespace AzurePipelines.TestLogger
 
         }
 
-        public async Task<int[]> AddTestCases(int testRunId, string[] testCaseNames, DateTime startedDate, string source, CancellationToken cancellationToken)
-        {
-            string requestBody = "[ " + string.Join(", ", testCaseNames.Select(x =>
-            {
-                Dictionary<string, object> properties = new Dictionary<string, object>
-                {
-                    { "testCaseTitle", x },
-                    { "automatedTestName", x },
-                    { "resultGroupType", "generic" },
-                    { "outcome", "Passed" }, // Start with a passed outcome initially
-                    { "state", "InProgress" },
-                    { "startedDate", startedDate.ToString(_dateFormatString) },
-                    { "automatedTestType", "UnitTest" },
-                    { "automatedTestTypeId", "13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" } // This is used in the sample response and also appears in web searches
-                };
-                if (!string.IsNullOrEmpty(source))
-                {
-                    properties.Add("automatedTestStorage", source);
-                }
-                return properties.ToJson();
-            })) + " ]";
-
-            string responseString = await SendAsync(HttpMethod.Post, $"/{testRunId}/results", requestBody, cancellationToken).ConfigureAwait(false);
-            using (StringReader reader = new StringReader(responseString))
-            {
-                JsonObject response = JsonDeserializer.Deserialize(reader) as JsonObject;
-                JsonArray testCases = (JsonArray)response.Value("value");
-                if (testCases.Length != testCaseNames.Length)
-                {
-                    throw new Exception("Unexpected number of test cases added");
-                }
-
-                List<int> testCaseIds = new List<int>();
-                for (int c = 0; c < testCases.Length; c++)
-                {
-                    int id = ((JsonObject)testCases[c]).ValueAsInt("id");
-                    testCaseIds.Add(id);
-                }
-
-                return testCaseIds.ToArray();
-            }
-        }
-
         public async Task MarkTestRunCompleted(int testRunId, bool aborted, DateTime completedDate, CancellationToken cancellationToken)
         {
             var testClient = _connection.GetClient<TestManagementHttpClient>();
@@ -448,56 +410,6 @@ namespace AzurePipelines.TestLogger
         {
         }
 
-        public virtual async Task<string> SendAsync(HttpMethod method, string endpoint, string body, CancellationToken cancellationToken, string apiVersionString = null, string queryString = null, string baseUrl = null)
-        {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
-            if (string.IsNullOrEmpty(apiVersionString))
-            {
-                apiVersionString = _apiVersionString;
-            }
-
-            if (queryString != null)
-            {
-                queryString += "&";
-            }
-            else
-            {
-                queryString = string.Empty;
-            }
-
-            string requestUri = $"{baseUrl ?? _runsUrl}{endpoint}?{queryString}api-version={apiVersionString}";
-            HttpRequestMessage request = new HttpRequestMessage(method, requestUri);
-            if (body != null)
-            {
-                request.Content = new StringContent(body, Encoding.UTF8, "application/json");
-            }
-
-            HttpResponseMessage response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-            response.Content?.Dispose();
-
-            if (Verbose)
-            {
-                Console.WriteLine($"Request:\n{method} {requestUri}\n{body.Indented()}\n\nResponse:\n{response.StatusCode}\n{responseBody.Indented()}\n");
-            }
-
-            try
-            {
-                response.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error from AzurePipelines logger while sending {method} to {requestUri}\nBody:\n{body}\nException:\n{ex}");
-                throw;
-            }
-
-            return responseBody;
-        }
 
         private async Task UploadConsoleOutputsAndErrors(int testRunId, IList<TestResultMessage> messages, int testResultId, int? testSubResultId)
         {
@@ -562,7 +474,9 @@ namespace AzurePipelines.TestLogger
                 foreach (UriDataAttachment attachment in attachmentSet.Attachments)
                 {
 
-                    string localPath = attachment.Uri.ToString();
+                    string localPath = $"TestResults/{attachment.Uri}";
+
+                    // 
 
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
