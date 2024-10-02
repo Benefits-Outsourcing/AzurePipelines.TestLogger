@@ -544,6 +544,13 @@ namespace AzurePipelines.TestLogger
                 else
                 {
                     Console.WriteLine($"File not found in the current working directory: {currentDirectory}");
+                    Console.WriteLine("Listing all files in the current working directory recursively:");
+
+                    string[] allFiles = Directory.GetFiles(currentDirectory, "*", SearchOption.AllDirectories);
+                    foreach (string file in allFiles)
+                    {
+                        Console.WriteLine(file);
+                    }
                 }
             }
             string fileName = Path.GetFileName(filePath);
