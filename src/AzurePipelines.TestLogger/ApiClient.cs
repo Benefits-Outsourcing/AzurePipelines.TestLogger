@@ -474,7 +474,20 @@ namespace AzurePipelines.TestLogger
                 foreach (UriDataAttachment attachment in attachmentSet.Attachments)
                 {
 
-                    string localPath = attachment.Uri.LocalPath;
+                    Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri}...");
+
+                    string localPath;
+                    if (attachment.Uri.IsAbsoluteUri)
+                    {
+                        localPath = attachment.Uri.LocalPath;
+                    }
+                    else
+                    {
+                        // Resolve the relative URI against a base URI
+                        Uri baseUri = new Uri("file:///");
+                        Uri resolvedUri = new Uri(baseUri, attachment.Uri);
+                        localPath = resolvedUri.LocalPath;
+                    }
 
                     // 
 
@@ -483,8 +496,8 @@ namespace AzurePipelines.TestLogger
                         localPath = NormalizePathForLinux(localPath);
                     }
 
-                    Console.WriteLine($"Attaching file {attachment.Description} {attachment.Uri.ToString()}...localpath: {localPath}");
-
+                    
+                    Console.WriteLine($"Attaching file local path = {localPath}...");
                     //if (attachment.Uri.IsAbsoluteUri)
                     //{
                     //    localPath = attachment.Uri.LocalPath;
