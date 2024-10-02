@@ -511,7 +511,28 @@ namespace AzurePipelines.TestLogger
 
         private async Task AttachFile(int testRunId, int? testResultId, int? testSubResultId, string filePath, string comment)
         {
-            byte[] contentAsBytes = File.ReadAllBytes(filePath);
+            byte[] contentAsBytes = [];
+            try
+            {
+                contentAsBytes = File.ReadAllBytes(filePath);
+            }
+            catch (DirectoryNotFoundException e)
+            {
+                Console.WriteLine($"Directory not found: {e.Message}");
+                string _fileName = Path.GetFileName(filePath);
+                string currentDirectory = Directory.GetCurrentDirectory();
+                string[] foundFiles = Directory.GetFiles(currentDirectory, _fileName, SearchOption.AllDirectories);
+
+                if (foundFiles.Length > 0)
+                {
+                    Console.WriteLine($"File found at: {foundFiles[0]}");
+                    contentAsBytes = File.ReadAllBytes(foundFiles[0]);
+                }
+                else
+                {
+                    Console.WriteLine($"File not found in the current working directory: {currentDirectory}");
+                }
+            }
             string fileName = Path.GetFileName(filePath);
             await AttachFile(testRunId, testResultId, testSubResultId, contentAsBytes, fileName, comment);
         }
